@@ -15,7 +15,7 @@ python:
 
 install:
     - pip install coveralls pep257
-    - pip install pytest pytest-pep8 pytest-cov pytest-cache
+    - pip install pytest pytest-pep8 pytest-cov pytest-cache sphinx
 
 script:
     - pep257 beard
