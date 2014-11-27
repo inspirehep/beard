@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#
 # This file is part of Beard.
 # Copyright (C) 2014 CERN.
 #
@@ -5,6 +7,4 @@
 # under the terms of the Revised BSD License; see LICENSE file for
 # more details.
 
-[run]
-source = beard
-omit = /*/tests/*
+"""Tests for :mod:`beard.similarity`."""

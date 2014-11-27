@@ -2,7 +2,10 @@
 Beard
 =====
 
-Bibliographic Entity Automatic Recognition and Disambiguation
+Beard is a Python library of machine learning tools for Bibliographic Entity
+Automatic Recognition and Disambiguation.
+
+The project is currently in early stage of development.
 
 Build Status
 ============
@@ -12,20 +15,10 @@ Build Status
 .. image:: https://coveralls.io/repos/inveniosoftware/beard/badge.png
 	:target: https://coveralls.io/r/inveniosoftware/beard
 
-About
-=====
-
-To do
-
-Documentation
-=============
-
-To do
-
 Installation
 ============
 
-To do
+``python setup.py install``
 
 Testing
 =======

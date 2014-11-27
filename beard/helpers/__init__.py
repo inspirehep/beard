@@ -7,4 +7,4 @@
 # under the terms of the Revised BSD License; see LICENSE file for
 # more details.
 
-"""Test initialization file."""
+"""Helper functions."""

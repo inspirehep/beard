@@ -80,11 +80,11 @@ _keywords = [
 ]
 
 _install_requires = [
-    "coverage",
-    "pytest"
+    "scikit-learn>=0.15.2"
 ]
 
 _tests_require = [
+    "pytest",
     "pytest-cache>=1.0",
     "pytest-cov>=1.8.0",
     "pytest-pep8>=1.0.6",
