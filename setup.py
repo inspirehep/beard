@@ -80,6 +80,8 @@ _keywords = [
 ]
 
 _install_requires = [
+    "scipy>=0.14",
+    "numpy>=1.9",
     "scikit-learn>=0.15.2"
 ]
 
