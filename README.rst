@@ -7,9 +7,6 @@ Automatic Recognition and Disambiguation.
 
 The project is currently in early stage of development.
 
-Build Status
-============
-
 .. image:: https://travis-ci.org/inveniosoftware/beard.svg?branch=master
 	:target: https://travis-ci.org/inveniosoftware/beard
 .. image:: https://coveralls.io/repos/inveniosoftware/beard/badge.png
