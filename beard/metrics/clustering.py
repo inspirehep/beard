@@ -7,7 +7,7 @@
 # under the terms of the Revised BSD License; see LICENSE file for
 # more details.
 
-"""Pairwise evaluation metrics for Beard.
+"""Clustering evaluation metrics.
 
 .. codeauthor:: Evangelos Tzemis <evangelos.tzemis@cern.ch>
 
@@ -18,8 +18,8 @@ from itertools import groupby
 from sklearn.metrics.cluster.supervised import check_clusterings
 
 
-def precision_recall_fscore(labels_true, labels_pred):
-    """Compute the pairwise variant of precision, recall and F score.
+def paired_precision_recall_fscore(labels_true, labels_pred):
+    """Compute the pairwise variant of precision, recall and F-score.
 
     Precision is the ability not to label as positive a sample
     that is negative. The best value is 1 and the worst is 0.
@@ -27,8 +27,8 @@ def precision_recall_fscore(labels_true, labels_pred):
     Recall is the ability to succesfully find all the positive samples.
     The best value is 1 and the worst is 0.
 
-    F score (Harmonic mean) can be thought as a weighted harmonic mean of
-    the precision and recall, where an F score reaches its best value at 1
+    F-score (Harmonic mean) can be thought as a weighted harmonic mean of
+    the precision and recall, where an F-score reaches its best value at 1
     and worst at 0.
 
     Parameters
@@ -41,6 +41,12 @@ def precision_recall_fscore(labels_true, labels_pred):
     :return float precision: calculated precission
     :return float recall: calculated recall
     :return float harmonic_mean: calculated harmonic_mean
+
+    Reference
+    ---------
+    Levin, Michael et al., "Citation-based bootstrapping for large-scale
+    author disambiguation", Journal of the American Society for Information
+    Science and Technology 63.5 (2012): 1030-1047.
 
     """
     # check that labels_* are 1d arrays and have the same size
@@ -70,7 +76,7 @@ def precision_recall_fscore(labels_true, labels_pred):
     return precision, recall, harmonic_mean
 
 
-def precision_score(labels_true, labels_pred):
+def paired_precision_score(labels_true, labels_pred):
     """Compute the pairwise variant of precision.
 
     Precision is the ability not to label as positive a sample
@@ -86,11 +92,11 @@ def precision_score(labels_true, labels_pred):
     :return float precision: calculated precission
 
     """
-    p, _, _ = precision_recall_fscore(labels_true, labels_pred)
+    p, _, _ = paired_precision_recall_fscore(labels_true, labels_pred)
     return p
 
 
-def recall_score(labels_true, labels_pred):
+def paired_recall_score(labels_true, labels_pred):
     """Compute the pairwise variant of recall.
 
     Recall is the ability to succesfully find all the positive samples.
@@ -106,11 +112,11 @@ def recall_score(labels_true, labels_pred):
     :return float recall: calculated recall
 
     """
-    _, r, _ = precision_recall_fscore(labels_true, labels_pred)
+    _, r, _ = paired_precision_recall_fscore(labels_true, labels_pred)
     return r
 
 
-def f_score(labels_true, labels_pred):
+def paired_f_score(labels_true, labels_pred):
     """Compute the pairwise variant of F score.
 
     F score can be thought as a weighted harmonic mean of the precision
@@ -127,7 +133,7 @@ def f_score(labels_true, labels_pred):
     :return float harmonic_mean: calculated harmonic mean (f_score)
 
     """
-    _, _, f = precision_recall_fscore(labels_true, labels_pred)
+    _, _, f = paired_precision_recall_fscore(labels_true, labels_pred)
     return f
 
 
