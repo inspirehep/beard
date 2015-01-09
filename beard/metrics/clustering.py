@@ -49,10 +49,10 @@ def paired_precision_recall_fscore(labels_true, labels_pred):
     Science and Technology 63.5 (2012): 1030-1047.
 
     """
-    # check that labels_* are 1d arrays and have the same size
+    # Check that labels_* are 1d arrays and have the same size
     labels_true, labels_pred = check_clusterings(labels_true, labels_pred)
 
-    # check that input given is not the empty set
+    # Check that input given is not the empty set
     if labels_true.shape == (0, ):
         raise ValueError(
             "input labels must not be empty.")
@@ -61,11 +61,11 @@ def paired_precision_recall_fscore(labels_true, labels_pred):
     c_gold = _group_samples_by_cluster_id(labels_true)
     c_system = _group_samples_by_cluster_id(labels_pred)
 
-    # Calculate Pairs (list of tuples)
+    # Calculate pairs (list of tuples)
     c_gold_pairs = _calculate_pairs(c_gold)
     c_system_pairs = _calculate_pairs(c_system)
 
-    # calculate evaluation metrics
+    # Calculate evaluation metrics
     inters = c_gold_pairs.intersection(c_system_pairs)
 
     precision = len(inters)/len(c_system_pairs)
@@ -138,7 +138,7 @@ def paired_f_score(labels_true, labels_pred):
 
 
 def _calculate_pairs(labels):
-    """ find all possible pair combination for given input.
+    """Find all possible pair combination for given input.
 
     Parameters
     ----------
@@ -151,7 +151,7 @@ def _calculate_pairs(labels):
     """
     pairs = [(i, j) for cluster in labels for i in cluster for j in cluster]
 
-    # set removes dublicated pairs: (x,y) equals to (y,x)
+    # Remove dublicated pairs: (x,y) equals to (y,x)
     pairs_set = set(map(frozenset, pairs))
 
     return pairs_set
