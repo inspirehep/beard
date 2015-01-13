@@ -10,5 +10,7 @@
 """Clustering algorithms."""
 
 from .blocking import BlockClustering
+from .wrappers import ScipyHierarchicalClustering
 
-__all__ = ("BlockClustering", )
+__all__ = ("BlockClustering",
+           "ScipyHierarchicalClustering")
