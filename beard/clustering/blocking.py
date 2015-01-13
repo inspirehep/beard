@@ -50,7 +50,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
             The blocking strategy, for mapping samples X to blocks.
             - "single": group all samples X[i] into the same block;
             - "precomputed": use `blocks[i]` argument (in `fit`, `partial_fit`
-              or `predict`) a key for mapping sample X[i] to a block;
+              or `predict`) as a key for mapping sample X[i] to a block;
             - callable: use blocking(X)[i] as a key for mapping sample X[i] to
               a block.
 
@@ -126,7 +126,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
 
         Returns
         -------
-        :param self: self
+        :returns: self
         """
         # Validate parameters
         X, blocks = self._validate(X, blocks)
@@ -153,7 +153,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
 
         Returns
         -------
-        :param self: self
+        :returns: self
         """
         # Validate parameters
         X, blocks = self._validate(X, blocks)
@@ -179,7 +179,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
 
         Returns
         -------
-        :param labels: array-like, shape (n_samples)
+        :returns: array-like, shape (n_samples)
             The labels.
         """
         # Validate parameters
