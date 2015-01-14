@@ -41,11 +41,15 @@ class BlockClustering(BaseEstimator, ClusterMixin):
         last batch of data.
     """
 
-    def __init__(self, blocking="single", base_estimator=None):
+    def __init__(self, affinity=None, blocking="single", base_estimator=None):
         """Initialize.
 
         Parameters
         ----------
+        :param affinity: string or None
+            If affinity == 'precomputed', then assume that X is a distance
+            matrix.
+
         :param blocking: string or callable, default "single"
             The blocking strategy, for mapping samples X to blocks.
             - "single": group all samples X[i] into the same block;
@@ -57,6 +61,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
         :param base_estimator: estimator
             Clustering estimator to fit within each block.
         """
+        self.affinity = affinity
         self.blocking = blocking
         self.base_estimator = base_estimator
 
@@ -87,10 +92,14 @@ class BlockClustering(BaseEstimator, ClusterMixin):
         for b in np.unique(blocks):
             # Fit on the block
             mask = (blocks == b)
+            X_mask = X[mask, :]
+
+            if self.affinity == "precomputed":
+                X_mask = X_mask[:, mask]
 
             if self.fit_:
                 cluster = clone(self.base_estimator)
-                cluster.fit(X[mask])
+                cluster.fit(X_mask)
 
             elif self.partial_fit_:
                 if b in self.clusterers_:
@@ -99,9 +108,9 @@ class BlockClustering(BaseEstimator, ClusterMixin):
                     cluster = clone(self.base_estimator)
 
                 if hasattr(cluster, "partial_fit"):
-                    cluster.partial_fit(X[mask])
+                    cluster.partial_fit(X_mask)
                 else:
-                    cluster.fit(X[mask])
+                    cluster.fit(X_mask)
 
             self.clusterers_[b] = cluster
 
@@ -119,7 +128,9 @@ class BlockClustering(BaseEstimator, ClusterMixin):
         Parameters
         ----------
         :param X: {array-like, sparse matrix}, shape (n_samples, n_features)
-            Input data.
+                  or (n_samples, n_samples)
+            Input data, as an array of samples or as a distance matrix if
+            affinity == 'precomputed'.
 
         :param blocks: array-like, shape (n_samples, )
             Block labels, if `blocking == 'precomputed'`.
@@ -146,7 +157,9 @@ class BlockClustering(BaseEstimator, ClusterMixin):
         Parameters
         ----------
         :param X: {array-like, sparse matrix}, shape (n_samples, n_features)
-            Input data.
+                  or (n_samples, n_samples)
+            Input data, as an array of samples or as a distance matrix if
+            affinity == 'precomputed'.
 
         :param blocks: array-like, shape (n_samples, )
             Block labels, if `blocking == 'precomputed'`.

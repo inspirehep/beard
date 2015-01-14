@@ -45,10 +45,12 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
             The linkage algorithm to use.
             See scipy.cluster.hierarchy.linkage for further details.
 
-        :param affinity: string
-            The distance metric to use. If affinity='precomputed', then
-            assume that X is a distance matrix.
-            See scipy.cluster.hierarchy.linkage for further details.
+        :param affinity: string or callable
+            The distance metric to use.
+            - "precomputed": assume that X is a distance matrix;
+            - callable: a function returning a distance matrix;
+            - Otherwise, any value supported by
+              scipy.cluster.hierarchy.linkage.
 
         :param threshold: float or None
             The thresold to apply when forming flat clusters.
@@ -90,7 +92,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         :param X: array-like, shape (n_samples, n_features) or
                   (n_samples, n_samples)
             Input data, as an array of samples or as a distance matrix if
-            affinity='precomputed'.
+            affinity == 'precomputed'.
 
         Returns
         -------
@@ -99,7 +101,15 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         X = np.array(X)
 
         if self.affinity == "precomputed":
-            self.linkage_ = hac.linkage(squareform(X), method=self.method)
+            i, j = np.triu_indices(X.shape[0], k=1)
+            X = X[i, j]
+            self.linkage_ = hac.linkage(X, method=self.method)
+
+        elif callable(self.affinity):
+            X = self.affinity(X)
+            i, j = np.triu_indices(X.shape[0], k=1)
+            X = X[i, j]
+            self.linkage_ = hac.linkage(X, method=self.method)
 
         else:
             self.linkage_ = hac.linkage(X,
@@ -116,9 +126,12 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         based on the value of self.threshold or self.n_clusters.
         """
         if self.threshold is not None:
-            return hac.fcluster(self.linkage_, self.threshold,
-                                criterion=self.criterion, depth=self.depth,
-                                R=self.R, monocrit=self.monocrit)
+            labels = hac.fcluster(self.linkage_, self.threshold,
+                                  criterion=self.criterion, depth=self.depth,
+                                  R=self.R, monocrit=self.monocrit)
+
+            _, labels = np.unique(labels, return_inverse=True)
+            return labels
 
         else:
             thresholds = np.concatenate(([0], self.linkage_[:, 2]))
@@ -132,6 +145,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
                                       monocrit=self.monocrit)
 
                 if len(np.unique(labels)) == self.n_clusters:
+                    _, labels = np.unique(labels, return_inverse=True)
                     return labels
 
             raise ValueError("n_clusters must be a value in [2, len(X)].")

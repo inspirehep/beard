@@ -26,6 +26,7 @@ from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.utils import check_random_state
 
 from ..blocking import BlockClustering
+from ..wrappers import ScipyHierarchicalClustering
 from ...metrics import paired_f_score
 
 
@@ -42,7 +43,7 @@ def test_fit():
     clusterer.fit(X)
 
     assert_equal(len(clusterer.clusterers_), 1)
-    assert_equal(len(np.unique(clusterer.labels_)), 4)
+    assert_array_equal([25, 25, 25, 25], np.bincount(clusterer.labels_))
 
     # Precomputed blocks
     clusterer = BlockClustering(
@@ -52,7 +53,20 @@ def test_fit():
     clusterer.fit(X, blocks=(y <= 1))
 
     assert_equal(len(clusterer.clusterers_), 2)
-    assert_equal(len(np.unique(clusterer.labels_)), 4)
+    assert_array_equal([25, 25, 25, 25], np.bincount(clusterer.labels_))
+
+    # Precomputed affinity
+    clusterer = BlockClustering(
+        affinity="precomputed",
+        blocking="precomputed",
+        base_estimator=ScipyHierarchicalClustering(affinity="precomputed",
+                                                   n_clusters=2,
+                                                   method="complete"))
+    X_affinity = euclidean_distances(X)
+    clusterer.fit(X_affinity, blocks=(y <= 1))
+
+    assert_equal(len(clusterer.clusterers_), 2)
+    assert_array_equal([25, 25, 25, 25], np.bincount(clusterer.labels_))
 
     # Custom blocking function
     X_ids = np.arange(len(X)).reshape((-1, 1))
@@ -71,7 +85,7 @@ def test_fit():
     clusterer.fit(X_ids)
 
     assert_equal(len(clusterer.clusterers_), 2)
-    assert_equal(len(np.unique(clusterer.labels_)), 4)
+    assert_array_equal([25, 25, 25, 25], np.bincount(clusterer.labels_))
 
 
 def test_partial_fit():
@@ -106,7 +120,7 @@ def test_predict():
                                 base_estimator=MiniBatchKMeans(n_clusters=2))
     clusterer.fit(X, blocks=(y <= 1))
     pred = clusterer.predict(X, blocks=(y <= 1))
-    assert_equal(len(np.unique(pred)), 4)
+    assert_array_equal([25, 25, 25, 25], np.bincount(clusterer.labels_))
 
     pred = clusterer.predict(X, blocks=10 * np.ones(len(X)))
     assert_array_equal(-np.ones(len(X)), pred)

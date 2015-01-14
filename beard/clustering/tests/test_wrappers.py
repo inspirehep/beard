@@ -16,6 +16,7 @@ from __future__ import division
 
 import numpy as np
 from numpy.testing import assert_equal
+from numpy.testing import assert_array_equal
 import pytest
 
 from sklearn.datasets import make_blobs
@@ -33,15 +34,22 @@ def test_scipy_hierarchical_clustering():
     # Default parameters, using euclidean distance
     clusterer = ScipyHierarchicalClustering(n_clusters=4)
     labels = clusterer.fit_predict(X)
-    assert_equal(len(np.unique(labels)), 4)
+    assert_array_equal([25, 25, 25, 25], np.bincount(labels))
+
+    # Using custom affinity function
+    clusterer = ScipyHierarchicalClustering(affinity=euclidean_distances,
+                                            n_clusters=4)
+    labels = clusterer.fit_predict(X)
+    assert_array_equal([25, 25, 25, 25], np.bincount(labels))
 
     # Using precomputed distances
     d = euclidean_distances(X)
-    d = (d + d.T) / 2.0  # make it symmetric
+    d = (d + d.T) / 2.0
     d /= d.max()
-    clusterer = ScipyHierarchicalClustering(n_clusters=4)
+    clusterer = ScipyHierarchicalClustering(affinity="precomputed",
+                                            n_clusters=4)
     labels = clusterer.fit_predict(d)
-    assert_equal(len(np.unique(labels)), 4)
+    assert_array_equal([25, 25, 25, 25], np.bincount(labels))
 
     # Change number of clusters
     clusterer.set_params(n_clusters=10)
@@ -49,9 +57,9 @@ def test_scipy_hierarchical_clustering():
     assert_equal(len(np.unique(labels)), 10)
 
     # Change threshold
-    clusterer.set_params(threshold=1.0)
+    clusterer.set_params(threshold=clusterer.linkage_[-4,  2])
     labels = clusterer.labels_
-    assert_equal(len(np.unique(labels)), 4)
+    assert_array_equal([25, 25, 25, 25], np.bincount(labels))
 
 
 def test_scipy_hierarchical_clustering_validation():
