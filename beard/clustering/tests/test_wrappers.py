@@ -35,6 +35,7 @@ def test_scipy_hierarchical_clustering():
     clusterer = ScipyHierarchicalClustering(n_clusters=4)
     labels = clusterer.fit_predict(X)
     assert_array_equal([25, 25, 25, 25], np.bincount(labels))
+    assert_equal(hasattr(clusterer, "best_threshold_"), False)
 
     # Using custom affinity function
     clusterer = ScipyHierarchicalClustering(affinity=euclidean_distances,
@@ -60,6 +61,20 @@ def test_scipy_hierarchical_clustering():
     clusterer.set_params(threshold=clusterer.linkage_[-4,  2])
     labels = clusterer.labels_
     assert_array_equal([25, 25, 25, 25], np.bincount(labels))
+
+
+def test_scipy_hierarchical_clustering_semi_supervised():
+    """Test semi-supervised learning for Scipy hierarchical clustering."""
+    random_state = check_random_state(42)
+    X, y = make_blobs(centers=4, shuffle=False, random_state=random_state)
+    mask = random_state.randint(2, size=len(y)).astype(np.bool)
+    y[mask] = -1
+
+    clusterer = ScipyHierarchicalClustering()
+    clusterer.fit(X, y)
+    labels = clusterer.labels_
+    assert_array_equal([25, 25, 25, 25], np.bincount(labels))
+    assert_equal(hasattr(clusterer, "best_threshold_"), True)
 
 
 def test_scipy_hierarchical_clustering_validation():
