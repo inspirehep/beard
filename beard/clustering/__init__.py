@@ -8,3 +8,7 @@
 # more details.
 
 """Clustering algorithms."""
+
+from .blocking import BlockClustering
+
+__all__ = ("BlockClustering", )
