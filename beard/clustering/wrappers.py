@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Beard.
-# Copyright (C) 2014 CERN.
+# Copyright (C) 2015 CERN.
 #
 # Beard is a free software; you can redistribute it and/or modify it
 # under the terms of the Revised BSD License; see LICENSE file for
@@ -145,7 +145,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
             for i in range(len(thresholds) - 1):
                 t1, t2 = thresholds[i:i + 2]
                 threshold = (t1 + t2) / 2.0
-                labels = hac.fcluster(self.linkage_, (t1 + t2) / 2.0,
+                labels = hac.fcluster(self.linkage_, threshold,
                                       criterion=self.criterion,
                                       depth=self.depth, R=self.R,
                                       monocrit=self.monocrit)

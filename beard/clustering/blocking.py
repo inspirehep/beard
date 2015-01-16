@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Beard.
-# Copyright (C) 2014 CERN.
+# Copyright (C) 2015 CERN.
 #
 # Beard is a free software; you can redistribute it and/or modify it
 # under the terms of the Revised BSD License; see LICENSE file for
@@ -129,12 +129,12 @@ class BlockClustering(BaseEstimator, ClusterMixin):
             if self.fit_ or not hasattr(clusterer, "partial_fit"):
                 try:
                     clusterer.fit(X_mask, y=y_mask)
-                except:
+                except TypeError:
                     clusterer.fit(X_mask)
             elif self.partial_fit_:
                 try:
                     clusterer.partial_fit(X_mask, y=y_mask)
-                except:
+                except TypeError:
                     clusterer.partial_fit(X_mask)
 
             self.clusterers_[b] = clusterer

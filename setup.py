@@ -83,8 +83,7 @@ _install_requires = [
     "scipy>=0.14",
     "numpy>=1.9",
     "scikit-learn>=0.15.2",
-    "unidecode",
-    "chardet"
+    "unidecode"
 ]
 
 _tests_require = [
