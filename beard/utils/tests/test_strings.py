@@ -21,4 +21,3 @@ def test_asciify():
     assert asciify("foo") == "foo"
     assert asciify("bèård") == "beard"
     assert asciify("schröder") == "schroder"
-    assert asciify("schr\xc3\xb6der") == "schroder"

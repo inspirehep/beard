@@ -13,13 +13,18 @@
 
 """
 
-from unidecode import unidecode
+import unicodedata
 
 
 def asciify(string):
     """Transliterate a string to ASCII."""
-    string = string.decode("utf8", "ignore")
-    string = unidecode(string)
-    string = string.replace(u"[?]", u"").encode("ascii")
+    try:
+        string = string.decode("utf8")
+    except:
+        pass
+
+    string = unicodedata.normalize("NFKD", string)
+    string = string.encode("ascii", "ignore")
+    string = string.decode("utf8")
 
     return string
