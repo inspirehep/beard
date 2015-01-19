@@ -17,6 +17,8 @@ from __future__ import division
 import numpy as np
 from numpy.testing import assert_equal
 from numpy.testing import assert_array_equal
+
+from pytest import mark
 import pytest
 
 from sklearn.cluster import AgglomerativeClustering
@@ -29,17 +31,23 @@ from ..blocking import BlockClustering
 from ..wrappers import ScipyHierarchicalClustering
 from ...metrics import paired_f_score
 
+random_state = check_random_state(42)
+X, y = make_blobs(centers=4, shuffle=False, random_state=random_state)
 
-def test_fit():
+
+def _distance(X_ids):
+    return euclidean_distances(X[X_ids.ravel()])
+
+
+@mark.parametrize('n_jobs', (1, 2))
+def test_fit(n_jobs):
     """Test fit."""
-    random_state = check_random_state(42)
-    X, y = make_blobs(centers=4, shuffle=False, random_state=random_state)
-
     # Single block
     clusterer = BlockClustering(
         blocking="single",
         base_estimator=AgglomerativeClustering(n_clusters=4,
-                                               linkage="complete"))
+                                               linkage="complete"),
+        n_jobs=n_jobs)
     clusterer.fit(X)
 
     assert_equal(len(clusterer.clusterers_), 1)
@@ -49,7 +57,8 @@ def test_fit():
     clusterer = BlockClustering(
         blocking="precomputed",
         base_estimator=AgglomerativeClustering(n_clusters=2,
-                                               linkage="complete"))
+                                               linkage="complete"),
+        n_jobs=n_jobs)
     clusterer.fit(X, blocks=(y <= 1))
 
     assert_equal(len(clusterer.clusterers_), 2)
@@ -61,7 +70,8 @@ def test_fit():
         blocking="precomputed",
         base_estimator=ScipyHierarchicalClustering(affinity="precomputed",
                                                    n_clusters=2,
-                                                   method="complete"))
+                                                   method="complete"),
+        n_jobs=n_jobs)
     X_affinity = euclidean_distances(X)
     clusterer.fit(X_affinity, blocks=(y <= 1))
 
@@ -73,9 +83,6 @@ def test_fit():
 
     def _blocking(X_ids):
         return y[X_ids.ravel()] <= 1  # block labels into {0,1} and {2,3}
-
-    def _distance(X_ids):
-        return euclidean_distances(X[X_ids.ravel()])
 
     clusterer = BlockClustering(
         blocking=_blocking,
@@ -90,8 +97,6 @@ def test_fit():
 
 def test_partial_fit():
     """Test partial_fit."""
-    random_state = check_random_state(42)
-    X, y = make_blobs(centers=4, shuffle=False, random_state=random_state)
     blocks = (y <= 1)
 
     clusterer1 = BlockClustering(blocking="precomputed",
@@ -113,9 +118,6 @@ def test_partial_fit():
 
 def test_predict():
     """Test predict."""
-    random_state = check_random_state(42)
-    X, y = make_blobs(centers=4, shuffle=False, random_state=random_state)
-
     clusterer = BlockClustering(blocking="precomputed",
                                 base_estimator=MiniBatchKMeans(n_clusters=2))
     clusterer.fit(X, blocks=(y <= 1))
@@ -128,9 +130,6 @@ def test_predict():
 
 def test_validation():
     """Test the validation of hyper-parameters and input data."""
-    random_state = check_random_state(42)
-    X, y = make_blobs(centers=4, shuffle=False, random_state=random_state)
-
     with pytest.raises(ValueError):
         clusterer = BlockClustering(
             blocking="foobar",

@@ -17,7 +17,8 @@ matrix:
 install: source travis-install.sh
 
 script:
-    - python setup.py test
+    - python setup.py install
+    - py.test
     - pep257 beard
     - "sphinx-build -qnNW doc doc/_build/html"
 
