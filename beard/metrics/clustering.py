@@ -39,7 +39,7 @@ def paired_precision_recall_fscore(labels_true, labels_pred):
 
     Returns
     -------
-    :return float precision: calculated precission
+    :return float precision: calculated precision
     :return float recall: calculated recall
     :return float harmonic_mean: calculated harmonic_mean
 
@@ -111,7 +111,7 @@ def paired_precision_score(labels_true, labels_pred):
 
     Returns
     -------
-    :return float precision: calculated precission
+    :return float precision: calculated precision
 
     """
     p, _, _ = paired_precision_recall_fscore(labels_true, labels_pred)
