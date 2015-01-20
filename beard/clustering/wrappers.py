@@ -135,7 +135,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
                 self.best_threshold_ = self.linkage_[-1, 2]
                 return self
 
-            best_threshold = None
+            best_threshold = self.linkage_[-1, 2]
             best_score = -np.inf
 
             thresholds = np.concatenate(([0],

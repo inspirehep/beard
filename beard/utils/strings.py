@@ -14,14 +14,15 @@
 """
 
 import unicodedata
+import sys
+
+IS_PYTHON_3 = sys.version_info[0] == 3
 
 
 def asciify(string):
     """Transliterate a string to ASCII."""
-    try:
-        string = string.decode("utf8")
-    except:
-        pass
+    if not IS_PYTHON_3 and not isinstance(string, unicode):
+        string = unicode(string, "utf8", errors="ignore")
 
     string = unicodedata.normalize("NFKD", string)
     string = string.encode("ascii", "ignore")

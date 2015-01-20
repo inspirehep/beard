@@ -70,10 +70,19 @@ def test_scipy_hierarchical_clustering_semi_supervised():
     mask = random_state.randint(2, size=len(y)).astype(np.bool)
     y[mask] = -1
 
+    # We should find all 4 clusters
     clusterer = ScipyHierarchicalClustering()
     clusterer.fit(X, y)
     labels = clusterer.labels_
     assert_array_equal([25, 25, 25, 25], np.bincount(labels))
+    assert_equal(hasattr(clusterer, "best_threshold_"), True)
+
+    # All labels are unknown, hence it should yield a single cluster
+    clusterer = ScipyHierarchicalClustering()
+    y[:] = -1
+    clusterer.fit(X, y)
+    labels = clusterer.labels_
+    assert_array_equal([100], np.bincount(labels))
     assert_equal(hasattr(clusterer, "best_threshold_"), True)
 
 
