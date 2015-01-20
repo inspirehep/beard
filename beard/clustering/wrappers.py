@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Beard.
-# Copyright (C) 2014 CERN.
+# Copyright (C) 2015 CERN.
 #
 # Beard is a free software; you can redistribute it and/or modify it
 # under the terms of the Revised BSD License; see LICENSE file for
@@ -15,10 +15,11 @@
 import numpy as np
 
 import scipy.cluster.hierarchy as hac
-from scipy.spatial.distance import squareform
 
 from sklearn.base import BaseEstimator
 from sklearn.base import ClusterMixin
+
+from beard.metrics import paired_f_score
 
 
 class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
@@ -35,8 +36,8 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
     """
 
     def __init__(self, method="single", affinity="euclidean", threshold=None,
-                 n_clusters=2, criterion="distance", depth=2, R=None,
-                 monocrit=None):
+                 n_clusters=1, criterion="distance", depth=2, R=None,
+                 monocrit=None, scoring=paired_f_score):
         """Initialize.
 
         Parameters
@@ -74,6 +75,10 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         :param monocrit: array-like or None
             The statistics upon which non-singleton i is thresholded.
             See scipy.cluster.hierarchy.fcluster for further details.
+
+        :param scoring: callable
+            The scoring function to maximize in (semi-)supervised clustering
+            (when y!=None).
         """
         self.method = method
         self.affinity = affinity
@@ -83,6 +88,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         self.depth = depth
         self.R = R
         self.monocrit = monocrit
+        self.scoring = scoring
 
     def fit(self, X, y=None):
         """Perform hierarchical clustering on input data.
@@ -94,12 +100,17 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
             Input data, as an array of samples or as a distance matrix if
             affinity == 'precomputed'.
 
+        :param y: array-like, shape (n_samples, )
+            Input labels, in case of (semi-)supervised clustering.
+            Labels equal to -1 stand for unknown labels.
+
         Returns
         -------
         :returns: self
         """
         X = np.array(X)
 
+        # Build linkage matrix
         if self.affinity == "precomputed":
             i, j = np.triu_indices(X.shape[0], k=1)
             X = X[i, j]
@@ -116,6 +127,37 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
                                         method=self.method,
                                         metric=self.affinity)
 
+        # Adjust threshold if y is provided
+        if y is not None:
+            train = (y != -1)
+
+            if train.sum() == 0:
+                self.best_threshold_ = self.linkage_[-1, 2]
+                return self
+
+            best_threshold = self.linkage_[-1, 2]
+            best_score = -np.inf
+
+            thresholds = np.concatenate(([0],
+                                         self.linkage_[:, 2],
+                                         [self.linkage_[-1, 2]]))
+
+            for i in range(len(thresholds) - 1):
+                t1, t2 = thresholds[i:i + 2]
+                threshold = (t1 + t2) / 2.0
+                labels = hac.fcluster(self.linkage_, threshold,
+                                      criterion=self.criterion,
+                                      depth=self.depth, R=self.R,
+                                      monocrit=self.monocrit)
+
+                score = self.scoring(y[train], labels[train])
+
+                if score >= best_score:
+                    best_score = score
+                    best_threshold = threshold
+
+            self.best_threshold_ = best_threshold
+
         return self
 
     @property
@@ -125,8 +167,13 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         Note that labels are computed on-the-fly from the linkage matrix,
         based on the value of self.threshold or self.n_clusters.
         """
-        if self.threshold is not None:
-            labels = hac.fcluster(self.linkage_, self.threshold,
+        threshold = self.threshold
+
+        if hasattr(self, "best_threshold_"):
+            threshold = self.best_threshold_
+
+        if threshold is not None:
+            labels = hac.fcluster(self.linkage_, threshold,
                                   criterion=self.criterion, depth=self.depth,
                                   R=self.R, monocrit=self.monocrit)
 
@@ -134,7 +181,9 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
             return labels
 
         else:
-            thresholds = np.concatenate(([0], self.linkage_[:, 2]))
+            thresholds = np.concatenate(([0],
+                                         self.linkage_[:, 2],
+                                         [self.linkage_[-1, 2]]))
 
             for i in range(len(thresholds) - 1):
                 t1, t2 = thresholds[i:i + 2]
@@ -148,4 +197,5 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
                     _, labels = np.unique(labels, return_inverse=True)
                     return labels
 
-            raise ValueError("n_clusters must be a value in [2, len(X)].")
+            raise ValueError("Failed to group samples into n_clusters=%d"
+                             % self.n_clusters)

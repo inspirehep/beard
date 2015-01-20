@@ -36,10 +36,11 @@ conda update --yes conda
 # Configure the conda environment and put it in the path using the
 # provided versions
 conda create -n testenv --yes python=$PYTHON_VERSION pip \
-    numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION scikit-learn=$SKLEARN_VERSION
+    numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION scikit-learn=$SKLEARN_VERSION \
+    pytest pytest-pep8 pytest-cache sphinx
 source activate testenv
 
-pip install coveralls pep257 pytest pytest-pep8 pytest-cov pytest-cache sphinx
+pip install coveralls pep257 pytest-cov
 
 python --version
 python -c "import numpy; print('numpy %s' % numpy.__version__)"

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Beard.
-# Copyright (C) 2014 CERN.
+# Copyright (C) 2015 CERN.
 #
 # Beard is a free software; you can redistribute it and/or modify it
 # under the terms of the Revised BSD License; see LICENSE file for
@@ -21,7 +21,20 @@ from sklearn.utils import column_or_1d
 
 
 def _single(X):
-    return np.ones(len(X), dtype=np.int)
+    return np.zeros(len(X), dtype=np.int)
+
+
+class _SingleClustering(BaseEstimator, ClusterMixin):
+    def fit(self, X, y=None):
+        self.labels_ = _single(X)
+        return self
+
+    def partial_fit(self, X, y=None):
+        self.labels_ = _single(X)
+        return self
+
+    def predict(self, X):
+        return _single(X)
 
 
 class BlockClustering(BaseEstimator, ClusterMixin):
@@ -71,7 +84,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
             blocks = _single(X)
         elif self.blocking == "precomputed":
             if blocks is not None and len(blocks) == len(X):
-                blocks = column_or_1d(blocks)
+                blocks = column_or_1d(blocks).ravel()
             else:
                 raise ValueError("Invalid value for blocks. When "
                                  "blocking='precomputed', blocks needs to be "
@@ -84,41 +97,54 @@ class BlockClustering(BaseEstimator, ClusterMixin):
 
         return X, blocks
 
-    def _fit(self, X, blocks):
+    def _fit(self, X, y, blocks):
         """Fit base clustering estimators on X."""
         self.labels_ = -np.ones(len(X), dtype=np.int)
         offset = 0
 
         for b in np.unique(blocks):
-            # Fit on the block
+            # Select data from block
             mask = (blocks == b)
             X_mask = X[mask, :]
+
+            if y is not None:
+                y_mask = y[mask]
+            else:
+                y_mask = None
 
             if self.affinity == "precomputed":
                 X_mask = X_mask[:, mask]
 
-            if self.fit_:
-                cluster = clone(self.base_estimator)
-                cluster.fit(X_mask)
-
+            # Fit a clusterer on the selected data
+            if len(X_mask) == 1:
+                clusterer = _SingleClustering()
+            elif self.fit_:
+                clusterer = clone(self.base_estimator)
             elif self.partial_fit_:
                 if b in self.clusterers_:
-                    cluster = self.clusterers_[b]
+                    clusterer = self.clusterers_[b]
                 else:
-                    cluster = clone(self.base_estimator)
+                    clusterer = clone(self.base_estimator)
 
-                if hasattr(cluster, "partial_fit"):
-                    cluster.partial_fit(X_mask)
-                else:
-                    cluster.fit(X_mask)
+            if self.fit_ or not hasattr(clusterer, "partial_fit"):
+                try:
+                    clusterer.fit(X_mask, y=y_mask)
+                except TypeError:
+                    clusterer.fit(X_mask)
+            elif self.partial_fit_:
+                try:
+                    clusterer.partial_fit(X_mask, y=y_mask)
+                except TypeError:
+                    clusterer.partial_fit(X_mask)
 
-            self.clusterers_[b] = cluster
+            self.clusterers_[b] = clusterer
 
-            pred = np.array(cluster.labels_)
+            # Save predictions
+            pred = np.array(clusterer.labels_)
             mask_unknown = (pred == -1)
             pred[~mask_unknown] += offset
             self.labels_[mask] = pred
-            offset += np.max(cluster.labels_) + 1
+            offset += np.max(clusterer.labels_) + 1
 
         return self
 
@@ -131,6 +157,10 @@ class BlockClustering(BaseEstimator, ClusterMixin):
                   or (n_samples, n_samples)
             Input data, as an array of samples or as a distance matrix if
             affinity == 'precomputed'.
+
+        :param y: array-like, shape (n_samples, )
+            Input labels, in case of (semi-)supervised clustering.
+            Labels equal to -1 stand for unknown labels.
 
         :param blocks: array-like, shape (n_samples, )
             Block labels, if `blocking == 'precomputed'`.
@@ -146,7 +176,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
         self.clusterers_ = {}
         self.fit_, self.partial_fit_ = True, False
 
-        return self._fit(X, blocks)
+        return self._fit(X, y, blocks)
 
     def partial_fit(self, X, y=None, blocks=None):
         """Resume fitting of base clustering estimators, for each block.
@@ -160,6 +190,10 @@ class BlockClustering(BaseEstimator, ClusterMixin):
                   or (n_samples, n_samples)
             Input data, as an array of samples or as a distance matrix if
             affinity == 'precomputed'.
+
+        :param y: array-like, shape (n_samples, )
+            Input labels, in case of (semi-)supervised clustering.
+            Labels equal to -1 stand for unknown labels.
 
         :param blocks: array-like, shape (n_samples, )
             Block labels, if `blocking == 'precomputed'`.
@@ -177,7 +211,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
 
         self.fit_, self.partial_fit_ = False, True
 
-        return self._fit(X, blocks)
+        return self._fit(X, y, blocks)
 
     def predict(self, X, blocks=None):
         """Predict data.
