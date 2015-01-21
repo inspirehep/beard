@@ -6,4 +6,6 @@ Beard is being developed at CERN. You can contact us at
 
 Contributors:
 
+* Gilles Louppe <g.louppe@cern.ch>
 * Mateusz Susik <mateusz.susik@cern.ch>
+* Petros Ioannidis <petros.ioannidis91@gmail.com>
