@@ -24,27 +24,33 @@ import pytest
 def test_precision_recall_fscore():
     """Test the results of precission_recall_fscore."""
     # test for the border case where score maximum
-    y = np.array([1, 2, 1, 3, 2, 4, 5, 4])
-    assert clustering.paired_precision_recall_fscore(y, y) == (1, 1, 1)
+    y = [1, 2, 1, 3, 2, 4, 5, 4]
+    assert_equal(clustering.paired_precision_recall_fscore(y, y), (1, 1, 1))
+
+    # test for the border case where score minimum
+    y_true = [1, 2, 1, 3, 2, 4, 5, 4]
+    y_pred = [1, 1, 2, 2, 3, 3, 4, 4]
+    assert_equal(clustering.paired_precision_recall_fscore(y_true, y_pred),
+                 (0, 0, 0))
 
     # test error raise when labels_true is empty
     with pytest.raises(ValueError):
-        clustering.paired_precision_recall_fscore(y, np.array([]))
+        clustering.paired_precision_recall_fscore(y, [])
 
     # test error raise when labels_pred is empty
     with pytest.raises(ValueError):
-        clustering.paired_precision_recall_fscore(np.array([]), y)
+        clustering.paired_precision_recall_fscore([], y)
 
     # test error raise when both inputs are empty
     with pytest.raises(ValueError):
-        clustering.paired_precision_recall_fscore(np.array([]), np.array([]))
+        clustering.paired_precision_recall_fscore([], [])
 
 
 def test_cluster_invariability():
     """Test that computed values are cluster invariant."""
-    y = np.array([1, 2, 1, 3, 2, 4, 5, 4])
-    y_prime_invariant = np.array([3, 6, 6, 5, 6, 2, 4, 2])
-    y_prime = np.array([2, 3, 3, 4, 3, 5, 1, 5])
+    y = [1, 2, 1, 3, 2, 4, 5, 4]
+    y_prime_invariant = [3, 6, 6, 5, 6, 2, 4, 2]
+    y_prime = [2, 3, 3, 4, 3, 5, 1, 5]
     assert_equal(clustering.paired_precision_recall_fscore(y, y_prime),
                  clustering.paired_precision_recall_fscore(y,
                                                            y_prime_invariant))
@@ -67,9 +73,14 @@ def test_raise_valueError():
 
 def test_precision_score():
     """Test the returned results of precision_score."""
-    y_true = np.array([1, 2, 1, 3, 2, 4, 5, 4])
-    y_pred = [1, 3, 3, 3, 2, 4, 5, 5]
-    assert_equal(clustering.paired_precision_score(y_true, y_pred), 8 / 12)
+    y_true = [1, 1, 2, 2, 3, 4, 5]
+    y_pred = [1, 2, 2, 2, 3, 4, 5]
+    assert_almost_equal(clustering.paired_precision_score(y_true, y_pred),
+                        1.0 / 3)
+
+    y_true = [1, 1, 1, 4, 5, 5, 0, 4]
+    y_pred = [1, 1, 1, 1, 5, 5, 6, 7]
+    assert_equal(clustering.paired_precision_score(y_true, y_pred), 4.0/7.0)
 
     # test for the trivial maximum case
     assert_equal(clustering.paired_precision_score(y_true, y_true), 1)
@@ -77,9 +88,14 @@ def test_precision_score():
 
 def test_recall_score():
     """Test the returned results of recall_score."""
-    y_true = np.array([1, 2, 1, 3, 2, 4, 5, 4])
-    y_pred = [1, 3, 3, 3, 2, 4, 5, 5]
-    assert_equal(clustering.paired_recall_score(y_true, y_pred), 8 / 11)
+    y_true = [1, 1, 2, 2, 3, 4, 5]
+    y_pred = [1, 2, 2, 2, 3, 4, 5]
+    assert_almost_equal(clustering.paired_recall_score(y_true, y_pred),
+                        0.5)
+
+    y_true = [1, 1, 1, 4, 5, 5, 0, 4]
+    y_pred = [1, 1, 1, 1, 5, 5, 6, 7]
+    assert_equal(clustering.paired_recall_score(y_true, y_pred), 4.0/5.0)
 
     # test for the trivial maximum case
     assert_equal(clustering.paired_recall_score(y_true, y_true), 1)
@@ -87,36 +103,43 @@ def test_recall_score():
 
 def test_f_score():
     """Test the returned results of F-score."""
-    y_true = np.array([1, 2, 1, 3, 2, 4, 5, 4])
-    y_pred = [1, 3, 3, 3, 2, 4, 5, 5]
-    desired_output = 2*(8/12)*(8/11)/((8/12)+(8/11))
+    y_true = [1, 1, 2, 2, 3, 4, 5]
+    y_pred = [1, 2, 2, 2, 3, 4, 5]
+    desired_output = 2*(1.0/3)*0.5/((1.0/3)+0.5)
     assert_almost_equal(clustering.paired_f_score(y_true, y_pred),
-                        desired_output, decimal=10)
+                        desired_output)
+
+    y_true = [1, 1, 1, 4, 5, 5, 0, 4]
+    y_pred = [1, 1, 1, 1, 5, 5, 6, 7]
+    desired_output = 2*(4.0/7.0)*(4.0/5.0)/(4.0/7.0 + 4.0/5.0)
+    assert_almost_equal(clustering.paired_f_score(y_true, y_pred),
+                        desired_output)
 
     # test for the trivial maximum case
     assert_equal(clustering.paired_f_score(y_true, y_true), 1)
 
 
-def test_group_samples_by_cluster_id():
+def test_cluster_samples():
     """Test that samples are correctly seperated into appropriate groups."""
-    y = np.array([1, 2, 1, 3, 2, 4, 5, 4])
+    y = [1, 2, 1, 3, 2, 4, 5, 4]
+    cls_true = {1: [0, 2], 2: [1, 4], 3: [3], 4: [5, 7], 5: [6]}
 
-    gs_true = [[0, 2], [1, 4], [3], [5, 7], [6]]
-    gs_true_set = set(map(frozenset, gs_true))
-
-    gs_pred = clustering._group_samples_by_cluster_id(y)
-    gs_pred_set = set(map(frozenset, gs_pred))
-
-    assert gs_true_set == gs_pred_set
+    assert_equal(cls_true, clustering._cluster_samples(y))
 
 
-def test_calculate_pairs():
-    """Test that pairs are correctly calculated."""
-    samples = [[0, 2, 8], [1, 4], [3], [5, 7], [6]]
-    pairs_pred = clustering._calculate_pairs(samples)
+def test_general_merge_distance():
+    """Test general merge distance function."""
+    y_true = np.array([1, 2, 1, 2, 1, 2])
+    y_pred = [1, 1, 1, 2, 2, 2]
 
-    pairs = [[0], [1], [2], [3], [4], [5], [6], [7], [8], [0, 2], [0, 8],
-             [2, 8], [1, 4], [5, 7]]
-    pairs_true = set(map(frozenset, pairs))
+    # test for trivial case
+    assert_equal(clustering._general_merge_distance(y_true, y_true), 0)
 
-    assert pairs_true == pairs_pred
+    # test that fs and fm has effect on result
+    zero_res = clustering._general_merge_distance(y_true, y_pred,
+                                                  fm=lambda x, y: 0,
+                                                  fs=lambda x, y: 0)
+    assert_equal(zero_res, 0)
+
+    # test for default functions
+    assert_equal(clustering._general_merge_distance(y_true, y_pred), 4.0)

@@ -14,6 +14,7 @@
 """
 from __future__ import division
 import numpy as np
+from operator import mul
 from itertools import groupby
 from sklearn.metrics.cluster.supervised import check_clusterings
 
@@ -57,21 +58,42 @@ def paired_precision_recall_fscore(labels_true, labels_pred):
         raise ValueError(
             "input labels must not be empty.")
 
-    # Reconstruct the given input by grouping the samples
-    c_gold = _group_samples_by_cluster_id(labels_true)
-    c_system = _group_samples_by_cluster_id(labels_pred)
+    f_one = lambda x, y: 1.0
+    f_zero = lambda x, y: 0.0
+    f_mult = mul
 
-    # Calculate pairs (list of tuples)
-    c_gold_pairs = _calculate_pairs(c_gold)
-    c_system_pairs = _calculate_pairs(c_system)
+    # Assigns each label to its own cluster
+    default_clustering = range(len(labels_pred))
 
-    # Calculate evaluation metrics
-    inters = c_gold_pairs.intersection(c_system_pairs)
+    # Calculate precision
+    numerator = _general_merge_distance(labels_true, labels_pred,
+                                        fm=f_zero, fs=f_mult)
+    denominator = _general_merge_distance(default_clustering,
+                                          labels_pred,
+                                          fm=f_zero, fs=f_mult)
+    try:
+        precision = 1.0 - numerator/denominator
+    except ZeroDivisionError:
+        precision = 1.0
 
-    precision = len(inters)/len(c_system_pairs)
-    recall = len(inters)/len(c_gold_pairs)
-    # (precision+recall) always > 0
-    harmonic_mean = 2*precision*recall/(precision + recall)
+    # Calculate recall
+    numerator = _general_merge_distance(labels_true, labels_pred,
+                                        fm=f_mult, fs=f_zero)
+    denominator = _general_merge_distance(labels_true,
+                                          default_clustering,
+                                          fm=f_mult, fs=f_zero)
+    try:
+        recall = 1.0 - numerator/denominator
+    except ZeroDivisionError:
+        recall = 1.0
+
+    # Calculate harmonic_mean - f_score
+
+    # If both are zero (minimum score) then harmonic_mean is also zero
+    if precision+recall == 0.0:
+        harmonic_mean = 0.0
+    else:
+        harmonic_mean = 2.0*precision*recall/(precision + recall)
 
     return precision, recall, harmonic_mean
 
@@ -137,27 +159,7 @@ def paired_f_score(labels_true, labels_pred):
     return f
 
 
-def _calculate_pairs(labels):
-    """Find all possible pair combination for given input.
-
-    Parameters
-    ----------
-    :param labels: array of lists containing the ids of elements of cluster.
-
-    Returns
-    -------
-    :return: all possible pair combinations
-
-    """
-    pairs = [(i, j) for cluster in labels for i in cluster for j in cluster]
-
-    # Remove dublicated pairs: (x,y) equals to (y,x)
-    pairs_set = set(map(frozenset, pairs))
-
-    return pairs_set
-
-
-def _group_samples_by_cluster_id(labels):
+def _cluster_samples(labels):
     """Group input to sets that belong to the same cluster.
 
     Parameters
@@ -166,9 +168,66 @@ def _group_samples_by_cluster_id(labels):
 
     Returns
     -------
-    :return: generator of lists containing the ids of elements of cluster.
+    :return: dictionary with keys the cluster ids and values a tuple containing
+             the ids of elements tha belong to this cluster.
 
     """
     groupped_samples = groupby(np.argsort(labels), lambda i: labels[i])
 
-    return (list(group) for _, group in groupped_samples)
+    return {k: tuple(values) for k, values in groupped_samples}
+
+
+def _general_merge_distance(y_true, y_pred,
+                            fs=lambda x, y: 1.0, fm=lambda x, y: 1.0):
+    """Implementation of Slice algorithm for computing generalized merge distance.
+
+    Slice is a linear time algorithm.
+
+    Merge Distance is the minimum number of splits and merges
+    to get from R-flat to y_true.
+
+    Parameters
+    ----------
+    :param y_true: array with the ground truth cluster labels.
+    :param y_pred: array with the predicted cluster labels.
+    :param fs: Optional. Function defining the cost of split.
+    :param fm: Optional. Function defining the cost of merge.
+
+    Returns
+    -------
+    :return float: Cost of getting from y_pred to y_true.
+
+    Reference
+    ---------
+    Menestrina, David Michael., "Matching and unifying records in a
+    distributed system", Department of Computer Science Thesis, Ph.D.
+    dissertation, Stanford University (2010).
+    """
+    r = _cluster_samples(y_pred)
+    s = _cluster_samples(y_true)
+    r_sizes = {k: len(v) for k, v in r.items()}
+
+    cost = 0.0
+    for si in s.values():
+        # determine which clusters in r contain the records of si
+        p_map = {}
+        for element in si:
+            cl = y_pred[element]
+            if cl not in p_map:
+                p_map[cl] = 0
+            p_map[cl] += 1
+
+        # Compute cost to generate si
+        si_cost = 0.0
+        total_recs = 0
+        for i, count in p_map.items():
+            # add the cost to split ri
+            if r_sizes[i] > count:
+                si_cost += fs(count, r_sizes[i] - count)
+            r_sizes[i] -= count
+            if total_recs != 0:
+                # Cost to merge into si
+                si_cost += fm(count, total_recs)
+            total_recs += count
+        cost += si_cost
+    return cost
