@@ -10,13 +10,17 @@
 """Blocking for clustering estimators.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. codeauthor:: Mateusz Susik <mateusz.susik@cern.ch>
 
 """
 import numpy as np
 
+from joblib import delayed
+from joblib import Parallel
+
 from sklearn.base import BaseEstimator
-from sklearn.base import ClusterMixin
 from sklearn.base import clone
+from sklearn.base import ClusterMixin
 from sklearn.utils import column_or_1d
 
 
@@ -37,6 +41,22 @@ class _SingleClustering(BaseEstimator, ClusterMixin):
         return _single(X)
 
 
+def _parallel_fit(fit_, partial_fit_, b, X, y, clusterer):
+    """Run clusterer's fit function."""
+    if fit_ or not hasattr(clusterer, "partial_fit"):
+        try:
+            clusterer.fit(X, y=y)
+        except TypeError:
+            clusterer.fit(X)
+    elif partial_fit_:
+        try:
+            clusterer.partial_fit(X, y=y)
+        except TypeError:
+            clusterer.partial_fit(X)
+
+    return (b, clusterer)
+
+
 class BlockClustering(BaseEstimator, ClusterMixin):
 
     """Implements blocking for clustering estimators.
@@ -54,7 +74,8 @@ class BlockClustering(BaseEstimator, ClusterMixin):
         last batch of data.
     """
 
-    def __init__(self, affinity=None, blocking="single", base_estimator=None):
+    def __init__(self, affinity=None, blocking="single", base_estimator=None,
+                 n_jobs=1):
         """Initialize.
 
         Parameters
@@ -73,10 +94,14 @@ class BlockClustering(BaseEstimator, ClusterMixin):
 
         :param base_estimator: estimator
             Clustering estimator to fit within each block.
+
+        :param n_jobs: integer
+            Parameter passed directly to joblib library.
         """
         self.affinity = affinity
         self.blocking = blocking
         self.base_estimator = base_estimator
+        self.n_jobs = n_jobs
 
     def _validate(self, X, blocks):
         """Validate hyper-parameters and input data. """
@@ -97,28 +122,38 @@ class BlockClustering(BaseEstimator, ClusterMixin):
 
         return X, blocks
 
-    def _fit(self, X, y, blocks):
-        """Fit base clustering estimators on X."""
-        self.labels_ = -np.ones(len(X), dtype=np.int)
-        offset = 0
+    def _blocks(self, X, y, blocks):
+        """Chop the training data into smaller chunks.
 
-        for b in np.unique(blocks):
-            # Select data from block
+        A chunk is demarcated by the corresponding block. Each chunk contains
+        only the training examples relevant to given block and a clusterer
+        which will be used to fit the data.
+
+        Returns
+        -------
+        :returns: generator
+            Quadruples in the form of ``(block, X, y, clusterer)`` where
+            X and y are the training examples for given block and clusterer is
+            an object with a ``fit`` method.
+        """
+        unique_blocks = np.unique(blocks)
+
+        for b in unique_blocks:
             mask = (blocks == b)
             X_mask = X[mask, :]
-
             if y is not None:
                 y_mask = y[mask]
             else:
                 y_mask = None
-
             if self.affinity == "precomputed":
                 X_mask = X_mask[:, mask]
 
-            # Fit a clusterer on the selected data
+            # Select a clusterer
             if len(X_mask) == 1:
                 clusterer = _SingleClustering()
             elif self.fit_:
+                # Although every job has its own copy of the estimator, one job
+                # can serve multiple fits. That's why the clone is needed.
                 clusterer = clone(self.base_estimator)
             elif self.partial_fit_:
                 if b in self.clusterers_:
@@ -126,24 +161,25 @@ class BlockClustering(BaseEstimator, ClusterMixin):
                 else:
                     clusterer = clone(self.base_estimator)
 
-            if self.fit_ or not hasattr(clusterer, "partial_fit"):
-                try:
-                    clusterer.fit(X_mask, y=y_mask)
-                except TypeError:
-                    clusterer.fit(X_mask)
-            elif self.partial_fit_:
-                try:
-                    clusterer.partial_fit(X_mask, y=y_mask)
-                except TypeError:
-                    clusterer.partial_fit(X_mask)
+            yield (b, X_mask, y_mask, clusterer)
 
-            self.clusterers_[b] = clusterer
+    def _fit(self, X, y, blocks):
+        """Fit base clustering estimators on X."""
+        self.labels_ = -np.ones(len(X), dtype=np.int)
+        offset = 0
 
+        results = (Parallel(n_jobs=self.n_jobs)
+                   (delayed(_parallel_fit)(self.fit_, self.partial_fit_,
+                                           b, X_mask, y_mask, clusterer) for
+                   b, X_mask, y_mask, clusterer in self._blocks(X, y, blocks)))
+
+        for b, clusterer in results:
             # Save predictions
+            self.clusterers_[b] = clusterer
             pred = np.array(clusterer.labels_)
             mask_unknown = (pred == -1)
             pred[~mask_unknown] += offset
-            self.labels_[mask] = pred
+            self.labels_[(blocks == b)] = pred
             offset += np.max(clusterer.labels_) + 1
 
         return self

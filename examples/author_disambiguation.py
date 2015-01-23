@@ -141,7 +141,8 @@ if __name__ == "__main__":
     block_clusterer = BlockClustering(
         blocking=blocking,
         base_estimator=ScipyHierarchicalClustering(affinity=affinity,
-                                                   method="complete"))
+                                                   method="complete"),
+        n_jobs=-1)
     block_clusterer.fit(X, y=y)
     labels = block_clusterer.labels_
 
