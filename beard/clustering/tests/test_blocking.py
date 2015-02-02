@@ -116,6 +116,16 @@ def test_partial_fit():
     assert_equal(paired_f_score(c1, c2), 1.0)
 
 
+def test_onthefly_labels():
+    clusterer = BlockClustering(
+        base_estimator=ScipyHierarchicalClustering(n_clusters=1,
+                                                   method="complete"))
+    clusterer.fit(X)
+    assert_array_equal([100], np.bincount(clusterer.labels_))
+    clusterer.clusterers_[0].set_params(n_clusters=4)
+    assert_array_equal([25, 25, 25, 25], np.bincount(clusterer.labels_))
+
+
 def test_predict():
     """Test predict."""
     clusterer = BlockClustering(blocking="precomputed",

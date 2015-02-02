@@ -72,6 +72,9 @@ class BlockClustering(BaseEstimator, ClusterMixin):
         Array of labels assigned to the input data.
         if partial_fit is used instead of fit, they are assigned to the
         last batch of data.
+
+    blocks_ : ndarray, shape (n_samples,)
+        Array of keys mapping input data to blocks.
     """
 
     def __init__(self, affinity=None, blocking="single", base_estimator=None,
@@ -165,8 +168,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
 
     def _fit(self, X, y, blocks):
         """Fit base clustering estimators on X."""
-        self.labels_ = -np.ones(len(X), dtype=np.int)
-        offset = 0
+        self.blocks_ = blocks
 
         results = (Parallel(n_jobs=self.n_jobs)
                    (delayed(_parallel_fit)(self.fit_, self.partial_fit_,
@@ -174,13 +176,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
                    b, X_mask, y_mask, clusterer in self._blocks(X, y, blocks)))
 
         for b, clusterer in results:
-            # Save predictions
             self.clusterers_[b] = clusterer
-            pred = np.array(clusterer.labels_)
-            mask_unknown = (pred == -1)
-            pred[~mask_unknown] += offset
-            self.labels_[(blocks == b)] = pred
-            offset += np.max(clusterer.labels_) + 1
 
         return self
 
@@ -276,12 +272,31 @@ class BlockClustering(BaseEstimator, ClusterMixin):
             # Predict on the block, if known
             if b in self.clusterers_:
                 mask = (blocks == b)
-                cluster = self.clusterers_[b]
+                clusterer = self.clusterers_[b]
 
-                pred = np.array(cluster.predict(X[mask]))
-                mask_unknown = (pred == -1)
-                pred[~mask_unknown] += offset
+                pred = np.array(clusterer.predict(X[mask]))
+                pred[(pred != -1)] += offset
                 labels[mask] = pred
-                offset += np.max(cluster.labels_) + 1
+                offset += np.max(clusterer.labels_) + 1
+
+        return labels
+
+    @property
+    def labels_(self):
+        """Compute the labels assigned to the input data.
+
+        Note that labels are computed on-the-fly.
+        """
+        labels = -np.ones(len(self.blocks_), dtype=np.int)
+        offset = 0
+
+        for b in self.clusterers_:
+            mask = (self.blocks_ == b)
+            clusterer = self.clusterers_[b]
+
+            pred = np.array(clusterer.labels_)
+            pred[(pred != -1)] += offset
+            labels[mask] = pred
+            offset += np.max(clusterer.labels_) + 1
 
         return labels
