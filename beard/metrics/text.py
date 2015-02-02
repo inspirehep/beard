@@ -53,13 +53,13 @@ def _jaro_matching(s1, s2):
     :returns: (int, int)
         The number of matching letters and transpositions
     """
-    H = min(len(s1), len(s2))//2
+    H = min(len(s1), len(s2)) // 2
 
     letters_cache = {}
     matches = 0
     transpositions = 0
-    s1_matching_letter = []
-    s2_matching_letter = []
+    s1_matching_letters = []
+    s2_matching_letters = []
     s1_matched_positions = []
     s2_matched_positions = []
 
@@ -75,7 +75,7 @@ def _jaro_matching(s1, s2):
                     if j not in s2_matched_positions:
                         matches += 1
                         s2_matched_positions.append(j)
-                    s1_matching_letter.append((i, letter))
+                    s1_matching_letters.append((i, letter))
                     break
 
     for letter, (s1_positions, s2_positions) in letters_cache.items():
@@ -84,14 +84,15 @@ def _jaro_matching(s1, s2):
                 if i - H <= j <= i + H:
                     if i not in s1_matched_positions:
                         s1_matched_positions.append(i)
-                    s2_matching_letter.append((j, letter))
+                    s2_matching_letters.append((j, letter))
                     break
 
-    s1_matching_letter.sort()
-    s2_matching_letter.sort()
+    s1_matching_letters.sort()
+    s2_matching_letters.sort()
     transpositions = len(tuple(filter(lambda x: x[0][1] != x[1][1],
-                               zip(s1_matching_letter,
-                                   s2_matching_letter))))
+                               zip(s1_matching_letters,
+                                   s2_matching_letters))))
+
     return matches, transpositions
 
 
@@ -113,10 +114,9 @@ def jaro(s1, s2):
 
     Reference
     ---------
-    Jaro, M. A. 1989. Advances in record-linkage methodology as
-    applied to matching the 1985 census of Tampa, Florida.
-    Journal of the American Statistical Association
-    84:414-420.
+    Jaro, M. A., "Advances in record-linkage methodology as applied to
+    matching the 1985 census of Tampa, Florida", Journal of the American
+    Statistical Association, 84:414-420, 1989.
     """
     if len(s1) == 0 or len(s2) == 0:
         return 0
@@ -126,9 +126,9 @@ def jaro(s1, s2):
     if n_matches == 0:
         return 0
 
-    return (1/3)*((n_matches/len(s1)) +
-                  (n_matches/len(s2)) +
-                  ((n_matches - (n_transpositions/2))/(n_matches)))
+    return 1 / 3 * (n_matches / len(s1) +
+                    n_matches / len(s2) +
+                    (n_matches - n_transpositions / 2) / n_matches)
 
 
 def jaro_winkler(s1, s2, p=0.1):
@@ -149,10 +149,8 @@ def jaro_winkler(s1, s2, p=0.1):
 
     Reference
     ---------
-    Winkler, W. E. 1999. The state of record linkage and cur-
-    rent research problems. Statistics of Income Division, In-
-    ternal Revenue Service Publication R99/04. Available from
-    http://www.census.gov/srd/www/byname.html.
+    Winkler, W. E., "The state of record linkage and current research
+    problems", Statistical Research Division, US Census Bureau. 1999.
     """
     jaro_distance = jaro(s1, s2)
 
@@ -163,4 +161,4 @@ def jaro_winkler(s1, s2, p=0.1):
         else:
             break
 
-    return jaro_distance + (p * common_prefix * (1 - jaro_distance))
+    return jaro_distance + p * common_prefix * (1 - jaro_distance)
