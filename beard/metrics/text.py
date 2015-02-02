@@ -10,10 +10,12 @@
 """Text metrics.
 
 .. codeauthor:: Petros Ioannidis <petros.ioannidis91@gmail.com>
+.. codeauthor:: Evangelos Tzemis <evangelos.tzemis@gmail.com>
 
 """
 
 from __future__ import division
+import numpy as np
 import re
 
 
@@ -162,3 +164,51 @@ def jaro_winkler(s1, s2, p=0.1):
             break
 
     return jaro_distance + p * common_prefix * (1 - jaro_distance)
+
+
+def levenshtein(a, b):
+    """Calculate the levenshtein distance between strings a and b.
+
+    Case sensitiveness is activated, meaning that uppercase letters
+    are treated differently than their corresponding lowercase ones.
+
+    Parameters
+    ----------
+    :param a: string
+        String to be compared
+
+    :param b: string
+        String to be compared
+
+    Returns
+    -------
+    :returns int:
+        The calculated levenshtein distance.
+    """
+    len_a, len_b = len(a), len(b)
+
+    if len_a < len_b:
+        return levenshtein(b, a)
+    if len_b == 0:
+        return len_a
+
+    # We use tuple() to force strings to be used as sequences.
+    a = np.array(tuple(a))
+    b = np.array(tuple(b))
+
+    # Instead of calculating the whole matrix, we only keep the last 2 rows.
+    previous_row = np.arange(len_b + 1)
+    for character in a:
+        # Insertion
+        current_row = previous_row + 1
+        # Substitution or matching
+        current_row[1:] = np.minimum(
+            current_row[1:],
+            np.add(previous_row[:-1], b != character))
+        # Deletion
+        current_row[1:] = np.minimum(
+            current_row[1:],
+            current_row[:-1] + 1)
+        previous_row = current_row
+
+    return current_row[-1]

@@ -10,13 +10,18 @@
 """Test text metrics.
 
 .. codeauthor:: Petros Ioannidis <petros.ioannidis91@gmail.com>
+.. codeauthor:: Evangelos Tzemis <evangelos.tzemis@gmail.com>
 
 """
 from __future__ import generators
 import pytest
 from pytest import mark
-from ..text import find_all, _jaro_matching, jaro, jaro_winkler
 from numpy.testing import assert_almost_equal
+from ..text import find_all
+from ..text import _jaro_matching
+from ..text import jaro
+from ..text import jaro_winkler
+from ..text import levenshtein
 
 
 @mark.parametrize('s, letter, occur',
@@ -81,3 +86,18 @@ def test_jaro(s1, s2, match):
 def test_jaro_winkler(s1, s2, match):
     """Test jaro_similarity_metric behaviour."""
     assert_almost_equal(jaro_winkler(s1, s2), match, 3)
+
+
+@mark.parametrize('string_a, string_b, distance',
+                  (('back', 'book', 2),
+                   ('weight', 'height', 1),
+                   ('Adam', 'Adams', 1),
+                   ('YES', 'yes', 3),
+                   ('weight', 'muchweigh', 5),
+                   ('grand father', '', len('grand father')),
+                   ('', 'grand father', len('grand father')),
+                   (' ', ' ', 0),
+                   ('', '', 0)))
+def test_levenshtein(string_a, string_b, distance):
+    """Test levenshtein_metric behaviour."""
+    assert levenshtein(string_a, string_b) == distance
