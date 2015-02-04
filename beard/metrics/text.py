@@ -19,7 +19,7 @@ import numpy as np
 import re
 
 
-def find_all(s, pattern):
+def _find_all(s, pattern):
     """Find all occurences of the given pattern.
 
     Parameters
@@ -67,8 +67,8 @@ def _jaro_matching(s1, s2):
 
     for letter in s1:
         if letter not in letters_cache:
-            letters_cache[letter] = (tuple(find_all(s1, letter)),
-                                     tuple(find_all(s2, letter)))
+            letters_cache[letter] = (tuple(_find_all(s1, letter)),
+                                     tuple(_find_all(s2, letter)))
 
     for letter, (s1_positions, s2_positions) in letters_cache.items():
         for i in s1_positions:

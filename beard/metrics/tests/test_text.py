@@ -14,10 +14,12 @@
 
 """
 from __future__ import generators
+
+from numpy.testing import assert_almost_equal
 import pytest
 from pytest import mark
-from numpy.testing import assert_almost_equal
-from ..text import find_all
+
+from ..text import _find_all
 from ..text import _jaro_matching
 from ..text import jaro
 from ..text import jaro_winkler
@@ -32,7 +34,7 @@ from ..text import levenshtein
                    ('ABCD', 'D', (3, ))))
 def test_find_all_normal_string(s, letter, occur):
     """Test find_all behaviour for average cases."""
-    assert tuple(find_all(s, letter)) == occur
+    assert tuple(_find_all(s, letter)) == occur
 
 
 @mark.parametrize('s, letter',
@@ -41,7 +43,7 @@ def test_find_all_normal_string(s, letter, occur):
 def test_find_all_none_string(s, letter):
     """Test find_all behaviour for empty cases."""
     with pytest.raises(StopIteration):
-        assert next(find_all(s, letter))
+        assert next(_find_all(s, letter))
 
 
 @mark.parametrize('s, letter',
@@ -53,7 +55,7 @@ def test_find_all_none_string(s, letter):
 def test_find_all_abnormal_string(s, letter):
     """Test find_all behaviour called with wrong objects."""
     with pytest.raises(TypeError):
-        next(find_all(s, letter))
+        next(_find_all(s, letter))
 
 
 @mark.parametrize('s1, s2, match',
