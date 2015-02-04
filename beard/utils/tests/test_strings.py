@@ -7,7 +7,7 @@
 # under the terms of the Revised BSD License; see LICENSE file for
 # more details.
 
-"""Test of string helpers.
+"""Tests of string helpers.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
 
