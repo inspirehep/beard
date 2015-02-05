@@ -60,7 +60,7 @@ class FuncTransformer(TransformerMixin):
 
         Returns
         -------
-        :returns X_: array-like, shape (n_samples, n_features)
+        :returns Xt: array-like, shape (n_samples, n_features)
             The transformed data.
         """
         dtype = self.dtype
@@ -115,7 +115,7 @@ class Shaper(TransformerMixin):
 
         Returns
         -------
-        :returns X_: array-like, shape (self.newshape)
+        :returns Xt: array-like, shape (self.newshape)
             The transformed data.
         """
         return X.reshape(self.newshape, order=self.order)

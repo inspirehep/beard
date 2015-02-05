@@ -8,3 +8,11 @@
 # more details.
 
 """Similarity learning algorithms."""
+
+from .pairs import PairTransformer
+from .pairs import CosineSimilarity
+from .pairs import AbsoluteDifference
+
+__all__ = ("PairTransformer",
+           "CosineSimilarity",
+           "AbsoluteDifference")

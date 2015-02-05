@@ -33,11 +33,11 @@ class PairTransformer(TransformerMixin):
         self.element_transformer = element_transformer
 
     def fit(self, X, y=None):
-        """Fit the given transformer on all individual elements in `X`.
+        """Fit the given transformer on all individual elements in ``X``.
 
-        Rows i in `X` are assumed to represent pairs, where
-        `X[i, :n_features]` and `X[i, n_features:]` correspond to their two
-        individual elements. Calling `fit` trains the given transformer on
+        Rows i in ``X`` are assumed to represent pairs, where
+        ``X[i, :n_features]`` and ``X[i, n_features:]`` correspond to their two
+        individual elements. Calling ``fit`` trains the given transformer on
         the dataset formed by all these individual elements.
 
         Parameters
@@ -53,20 +53,20 @@ class PairTransformer(TransformerMixin):
         self.n_features_ = n_features_all / 2
 
         if sp.issparse(X):
-            X_ = sp.vstack((X[:, :self.n_features_],
+            Xt = sp.vstack((X[:, :self.n_features_],
                             X[:, self.n_features_:])).tocsr()
         else:
-            X_ = np.vstack((X[:, :self.n_features_], X[:, self.n_features_:]))
+            Xt = np.vstack((X[:, :self.n_features_], X[:, self.n_features_:]))
 
-        self.element_transformer.fit(X_)
+        self.element_transformer.fit(Xt)
 
         return self
 
     def transform(self, X):
-        """Transform all individual elements in `X`.
+        """Transform all individual elements in ``X``.
 
-        Rows i in the returned array `X_` represent transformed pairs, where
-        `X_[i, :n_features_prime]` and `X_[i, n_features_prime:]` correspond
+        Rows i in the returned array ``Xt`` represent transformed pairs, where
+        ``Xt[i, :n_features_t]`` and ``Xt[i, n_features_t:]`` correspond
         to their two individual transformed elements.
 
         Parameters
@@ -76,25 +76,25 @@ class PairTransformer(TransformerMixin):
 
         Returns
         -------
-        :returns X_: array-like, shape (n_samples, 2 * n_features_prime)
+        :returns Xt: array-like, shape (n_samples, 2 * n_features_t
             The transformed data.
         """
         n_samples = X.shape[0]
 
         if sp.issparse(X):
-            X_ = sp.vstack((X[:, :self.n_features_],
+            Xt = sp.vstack((X[:, :self.n_features_],
                             X[:, self.n_features_:])).tocsr()
         else:
-            X_ = np.vstack((X[:, :self.n_features_], X[:, self.n_features_:]))
+            Xt = np.vstack((X[:, :self.n_features_], X[:, self.n_features_:]))
 
-        X_ = self.element_transformer.transform(X_)
+        Xt = self.element_transformer.transform(Xt)
 
-        if sp.issparse(X_):
-            X_ = sp.hstack((X_[:n_samples], X_[n_samples:])).tocsr()
+        if sp.issparse(Xt):
+            Xt = sp.hstack((Xt[:n_samples], Xt[n_samples:])).tocsr()
         else:
-            X_ = np.hstack((X_[:n_samples], X_[n_samples:]))
+            Xt = np.hstack((Xt[:n_samples], Xt[n_samples:]))
 
-        return X_
+        return Xt
 
 
 class CosineSimilarity(TransformerMixin):
@@ -116,13 +116,13 @@ class CosineSimilarity(TransformerMixin):
         return self
 
     def transform(self, X):
-        """Compute the cosine similarity for all pairs of elements in `X`.
+        """Compute the cosine similarity for all pairs of elements in ``X``.
 
-        Rows i in `X` are assumed to represent pairs, where
-        `X[i, :n_features]` and `X[i, n_features:]` correspond to their two
-        individual elements. Calling `transform` computes the cosine similarity
-        between between these elements, i.e. that `X_[i]` is the cosine of
-        `X[i, :n_features]` and `X[i, n_features:]`.
+        Rows i in ``X`` are assumed to represent pairs, where
+        ``X[i, :n_features]`` and ``X[i, n_features:]`` correspond to their two
+        individual elements. Calling ``transform`` computes the cosine
+        similarity between these elements, i.e. that ``Xt[i]`` is the cosine of
+        ``X[i, :n_features]`` and ``X[i, n_features:]``.
 
         Parameters
         ----------
@@ -131,7 +131,7 @@ class CosineSimilarity(TransformerMixin):
 
         Returns
         -------
-        :returns X_: array-like, shape (n_samples, 2 * n_features_prime)
+        :returns Xt: array-like, shape (n_samples, 2 * n_features_prime)
             The transformed data.
         """
         n_samples, n_features_all = X.shape
@@ -157,10 +157,10 @@ class CosineSimilarity(TransformerMixin):
         denominator = (norm1 ** 0.5) * (norm2 ** 0.5)
 
         with np.errstate(divide="ignore"):
-            X_ = numerator / denominator
-            X_[denominator == 0.0] = 0.0
+            Xt = numerator / denominator
+            Xt[denominator == 0.0] = 0.0
 
-        return X_.reshape((n_samples, 1))
+        return Xt.reshape((n_samples, 1))
 
 
 class AbsoluteDifference(TransformerMixin):
@@ -182,13 +182,13 @@ class AbsoluteDifference(TransformerMixin):
         return self
 
     def transform(self, X):
-        """Compute the absolute difference for all pairs of elements in `X`.
+        """Compute the absolute difference for all pairs of elements in ``X``.
 
-        Rows i in `X` are assumed to represent pairs, where
-        `X[i, :n_features]` and `X[i, n_features:]` correspond to their two
-        individual elements. Calling `transform` computes the absolute
-        difference between between these elements, i.e. that `X_[i]` is the
-        absolute difference of `X[i, :n_features]` and `X[i, n_features:]`.
+        Rows i in ``X`` are assumed to represent pairs, where
+        ``X[i, :n_features]`` and ``X[i, n_features:]`` correspond to their
+        two individual elements. Calling ``transform`` computes the absolute
+        difference between these elements, i.e. that ``Xt[i]`` is the
+        absolute difference of ``X[i, :n_features]`` and ``X[i, n_features:]``.
 
         Parameters
         ----------
@@ -197,7 +197,7 @@ class AbsoluteDifference(TransformerMixin):
 
         Returns
         -------
-        :returns X_: array-like, shape (n_samples, 2 * n_features_prime)
+        :returns Xt: array-like, shape (n_samples, 2 * n_features_prime)
             The transformed data.
         """
         n_samples, n_features_all = X.shape

@@ -11,5 +11,10 @@
 
 from .strings import asciify
 from .strings import normalize_personal_name
+from .transformers import FuncTransformer
+from .transformers import Shaper
 
-__all__ = ("asciify", "normalize_personal_name")
+__all__ = ("asciify",
+           "normalize_personal_name",
+           "FuncTransformer",
+           "Shaper")
