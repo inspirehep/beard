@@ -17,6 +17,8 @@ affiliation) tuples that correspond to the same actual person.
 
 """
 
+from __future__ import print_function
+
 import numpy as np
 
 from sklearn.cross_validation import train_test_split
@@ -91,20 +93,22 @@ def blocking(X):
 
 if __name__ == "__main__":
     # Load data
-    X = np.load("data/authors-X.npy")
-    truth = np.load("data/authors-clusters.npy")
+    data = np.load("data/author-disambiguation.npz")
+    X = data["X"]
+    truth = data["y"]
 
     # Split into train and test sets
     train, test = train_test_split(np.arange(len(X)),
-                                   test_size=0.75, random_state=42)
+                                   test_size=0.9, random_state=42)
     y = -np.ones(len(X), dtype=np.int)
     y[train] = truth[train]
 
     # Semi-supervised block clustering
     block_clusterer = BlockClustering(
         blocking=blocking,
-        base_estimator=ScipyHierarchicalClustering(affinity=affinity,
-                                                   method="complete"),
+        base_estimator=ScipyHierarchicalClustering(
+            affinity=affinity,
+            method="complete"),
         n_jobs=-1)
     block_clusterer.fit(X, y=y)
     labels = block_clusterer.labels_
@@ -116,11 +120,11 @@ if __name__ == "__main__":
         for name, affiliation in X[labels == cluster]:
             entries.add((name, affiliation))
 
-        print "Cluster #%d = %s" % (cluster, entries)
-    print
+        print("Cluster #%d = %s" % (cluster, entries))
+    print()
 
     # Statistics
-    print "Number of blocks =", len(block_clusterer.clusterers_)
-    print "True number of clusters", len(np.unique(truth))
-    print "Number of computed clusters", len(np.unique(labels))
-    print "Paired F-score =", paired_f_score(truth, labels)
+    print("Number of blocks =", len(block_clusterer.clusterers_))
+    print("True number of clusters", len(np.unique(truth)))
+    print("Number of computed clusters", len(np.unique(labels)))
+    print("Paired F-score =", paired_f_score(truth, labels))
