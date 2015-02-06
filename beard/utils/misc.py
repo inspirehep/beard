@@ -7,18 +7,23 @@
 # under the terms of the Revised BSD License; see LICENSE file for
 # more details.
 
-"""Tests of string helpers.
+"""Miscellaneous helpers.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
 
 """
 
-from ..strings import asciify
+from functools import wraps
 
 
-def test_asciify():
-    """Test of asciify"""
-    assert asciify("") == ""
-    assert asciify("foo") == "foo"
-    assert asciify("bèård") == "beard"
-    assert asciify("schröder") == "schroder"
+def memoize(func):
+    """Memoization function."""
+    cache = {}
+
+    @wraps(func)
+    def wrap(*args):
+        if args not in cache:
+            cache[args] = func(*args)
+        return cache[args]
+
+    return wrap

@@ -18,55 +18,14 @@ affiliation) tuples that correspond to the same actual person.
 """
 
 import numpy as np
-import re
 
-from functools import wraps
 from sklearn.cross_validation import train_test_split
 
 from beard.clustering import BlockClustering
 from beard.clustering import ScipyHierarchicalClustering
 from beard.metrics import paired_f_score
-from beard.utils.strings import asciify
-
-
-def memoize(func):
-    """Memoization function."""
-    cache = {}
-
-    @wraps(func)
-    def wrap(*args):
-        if args not in cache:
-            cache[args] = func(*args)
-        return cache[args]
-
-    return wrap
-
-
-RE_NORMALIZE_LAST_NAME = re.compile("\s+|\-")
-RE_NORMALIZE = re.compile("(,\s(i|ii|iii|iv|v|vi|jr))|[\.'\-,]|\s+")
-
-
-@memoize
-def normalize(name):
-    """Transliterate a name to ascii and remove all special characters."""
-    name = asciify(name).lower()
-
-    try:
-        names = name.split(",", 1)
-        name = "%s, %s" % (RE_NORMALIZE_LAST_NAME.sub("", names[0]), names[1])
-    except:
-        pass
-
-    name = RE_NORMALIZE.sub(" ", name)
-    name = name.strip()
-
-    return name
-
-
-@memoize
-def initials(name):
-    """Compute the set of initials of a given name."""
-    return set([w[0] for w in name.split()])
+from beard.utils import normalize_name
+from beard.utils import name_initials
 
 
 def affinity(X):
@@ -79,12 +38,12 @@ def affinity(X):
     distances = np.zeros((len(X), len(X)), dtype=np.float)
 
     for i, j in zip(*np.triu_indices(len(X), k=1)):
-        name_i = normalize(X[i, 0])
+        name_i = normalize_name(X[i, 0])
         aff_i = X[i, 1]
-        initials_i = initials(name_i)
-        name_j = normalize(X[j, 0])
+        initials_i = name_initials(name_i)
+        name_j = normalize_name(X[j, 0])
         aff_j = X[j, 1]
-        initials_j = initials(name_j)
+        initials_j = name_initials(name_j)
 
         # Names and affiliations match
         if (name_i == name_j and aff_i == aff_j):
@@ -112,16 +71,20 @@ def affinity(X):
 def blocking(X):
     """Blocking function using last name and first initial as key."""
     def last_name_first_initial(name):
-        try:
-            last_name, other_names = name.split(",", 1)
-            return "%s %s" % (last_name, other_names.strip()[0])
-        except:
-            return name
+        names = name.split(",", 1)
+
+        if len(names) == 2:
+            name = "%s %s" % (names[0], names[1].strip()[0])
+        else:
+            name = names[0]
+
+        name = normalize_name(name)
+        return name
 
     blocks = []
 
     for name in X[:, 0]:
-        blocks.append(normalize(last_name_first_initial(name)))
+        blocks.append(last_name_first_initial(name))
 
     return np.array(blocks)
 
