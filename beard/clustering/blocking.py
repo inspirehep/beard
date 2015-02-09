@@ -13,6 +13,9 @@
 .. codeauthor:: Mateusz Susik <mateusz.susik@cern.ch>
 
 """
+
+from __future__ import print_function
+
 import numpy as np
 
 from joblib import delayed
@@ -41,8 +44,11 @@ class _SingleClustering(BaseEstimator, ClusterMixin):
         return _single(X)
 
 
-def _parallel_fit(fit_, partial_fit_, b, X, y, clusterer):
+def _parallel_fit(fit_, partial_fit_, b, X, y, clusterer, verbose):
     """Run clusterer's fit function."""
+    if verbose > 1:
+        print("Clustering %d samples on block '%s'..." % (len(X), b))
+
     if fit_ or not hasattr(clusterer, "partial_fit"):
         try:
             clusterer.fit(X, y=y)
@@ -78,7 +84,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
     """
 
     def __init__(self, affinity=None, blocking="single", base_estimator=None,
-                 n_jobs=1):
+                 verbose=0, n_jobs=1):
         """Initialize.
 
         Parameters
@@ -98,12 +104,16 @@ class BlockClustering(BaseEstimator, ClusterMixin):
         :param base_estimator: estimator
             Clustering estimator to fit within each block.
 
-        :param n_jobs: integer
+        :param verbose: int, default=0
+            Verbosity of the fitting procedure.
+
+        :param n_jobs: int
             Parameter passed directly to joblib library.
         """
         self.affinity = affinity
         self.blocking = blocking
         self.base_estimator = base_estimator
+        self.verbose = verbose
         self.n_jobs = n_jobs
 
     def _validate(self, X, blocks):
@@ -170,9 +180,10 @@ class BlockClustering(BaseEstimator, ClusterMixin):
         """Fit base clustering estimators on X."""
         self.blocks_ = blocks
 
-        results = (Parallel(n_jobs=self.n_jobs)
+        results = (Parallel(n_jobs=self.n_jobs, verbose=self.verbose)
                    (delayed(_parallel_fit)(self.fit_, self.partial_fit_,
-                                           b, X_mask, y_mask, clusterer) for
+                                           b, X_mask, y_mask, clusterer,
+                                           self.verbose) for
                    b, X_mask, y_mask, clusterer in self._blocks(X, y, blocks)))
 
         for b, clusterer in results:

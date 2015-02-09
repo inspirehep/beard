@@ -9,7 +9,7 @@
 
 """Simplified author disambiguation example.
 
-This example shows how to use semi-supervised block clustering for the author
+This example shows how to use block clustering for the author
 disambiguation problem. To goal is to cluster together all (author name,
 affiliation) tuples that correspond to the same actual person.
 
@@ -20,8 +20,6 @@ affiliation) tuples that correspond to the same actual person.
 from __future__ import print_function
 
 import numpy as np
-
-from sklearn.cross_validation import train_test_split
 
 from beard.clustering import BlockClustering
 from beard.clustering import ScipyHierarchicalClustering
@@ -97,20 +95,16 @@ if __name__ == "__main__":
     X = data["X"]
     truth = data["y"]
 
-    # Split into train and test sets
-    train, test = train_test_split(np.arange(len(X)),
-                                   test_size=0.9, random_state=42)
-    y = -np.ones(len(X), dtype=np.int)
-    y[train] = truth[train]
-
-    # Semi-supervised block clustering
+    # Block clustering with fixed threshold
     block_clusterer = BlockClustering(
         blocking=blocking,
         base_estimator=ScipyHierarchicalClustering(
+            threshold=0.5,
             affinity=affinity,
             method="complete"),
+        verbose=3,
         n_jobs=-1)
-    block_clusterer.fit(X, y=y)
+    block_clusterer.fit(X)
     labels = block_clusterer.labels_
 
     # Print clusters

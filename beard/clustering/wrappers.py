@@ -54,7 +54,10 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
               scipy.cluster.hierarchy.linkage.
 
         :param threshold: float or None
-            The thresold to apply when forming flat clusters.
+            The thresold to apply when forming flat clusters. In case
+            of semi-supervised clustering, this value is overriden by
+            the threshold maximizing the provided scoring function on
+            the labeled samples.
             See scipy.cluster.hierarchy.fcluster for further details.
 
         :param n_clusters: int
@@ -132,7 +135,6 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
             train = (y != -1)
 
             if train.sum() == 0:
-                self.best_threshold_ = self.linkage_[-1, 2]
                 return self
 
             best_threshold = self.linkage_[-1, 2]
@@ -169,7 +171,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         """
         threshold = self.threshold
 
-        if hasattr(self, "best_threshold_"):
+        if hasattr(self, "best_threshold_"):  # Overide default threshold
             threshold = self.best_threshold_
 
         if threshold is not None:
@@ -187,8 +189,8 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
 
             for i in range(len(thresholds) - 1):
                 t1, t2 = thresholds[i:i + 2]
-
-                labels = hac.fcluster(self.linkage_, (t1 + t2) / 2.0,
+                threshold = (t1 + t2) / 2.0
+                labels = hac.fcluster(self.linkage_, threshold,
                                       criterion=self.criterion,
                                       depth=self.depth, R=self.R,
                                       monocrit=self.monocrit)
