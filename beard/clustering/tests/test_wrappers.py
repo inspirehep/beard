@@ -83,7 +83,7 @@ def test_scipy_hierarchical_clustering_semi_supervised():
     clusterer.fit(X, y)
     labels = clusterer.labels_
     assert_array_equal([100], np.bincount(labels))
-    assert_equal(hasattr(clusterer, "best_threshold_"), True)
+    assert_equal(hasattr(clusterer, "best_threshold_"), False)
 
 
 def test_scipy_hierarchical_clustering_validation():

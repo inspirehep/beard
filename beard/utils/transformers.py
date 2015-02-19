@@ -14,10 +14,11 @@
 """
 import numpy as np
 
+from sklearn.base import BaseEstimator
 from sklearn.base import TransformerMixin
 
 
-class FuncTransformer(TransformerMixin):
+class FuncTransformer(BaseEstimator, TransformerMixin):
 
     """Apply a given function element-wise."""
 
@@ -71,7 +72,7 @@ class FuncTransformer(TransformerMixin):
         return vfunc(X)
 
 
-class Shaper(TransformerMixin):
+class Shaper(BaseEstimator, TransformerMixin):
 
     """Reshape arrays."""
 

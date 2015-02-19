@@ -9,7 +9,7 @@
 
 """Simplified author disambiguation example.
 
-This example shows how to use semi-supervised block clustering for the author
+This example shows how to use block clustering for the author
 disambiguation problem. To goal is to cluster together all (author name,
 affiliation) tuples that correspond to the same actual person.
 
@@ -17,56 +17,15 @@ affiliation) tuples that correspond to the same actual person.
 
 """
 
-import numpy as np
-import re
+from __future__ import print_function
 
-from functools import wraps
-from sklearn.cross_validation import train_test_split
+import numpy as np
 
 from beard.clustering import BlockClustering
 from beard.clustering import ScipyHierarchicalClustering
 from beard.metrics import paired_f_score
-from beard.utils.strings import asciify
-
-
-def memoize(func):
-    """Memoization function."""
-    cache = {}
-
-    @wraps(func)
-    def wrap(*args):
-        if args not in cache:
-            cache[args] = func(*args)
-        return cache[args]
-
-    return wrap
-
-
-RE_NORMALIZE_LAST_NAME = re.compile("\s+|\-")
-RE_NORMALIZE = re.compile("(,\s(i|ii|iii|iv|v|vi|jr))|[\.'\-,]|\s+")
-
-
-@memoize
-def normalize(name):
-    """Transliterate a name to ascii and remove all special characters."""
-    name = asciify(name).lower()
-
-    try:
-        names = name.split(",", 1)
-        name = "%s, %s" % (RE_NORMALIZE_LAST_NAME.sub("", names[0]), names[1])
-    except:
-        pass
-
-    name = RE_NORMALIZE.sub(" ", name)
-    name = name.strip()
-
-    return name
-
-
-@memoize
-def initials(name):
-    """Compute the set of initials of a given name."""
-    return set([w[0] for w in name.split()])
+from beard.utils import normalize_name
+from beard.utils import name_initials
 
 
 def affinity(X):
@@ -79,12 +38,12 @@ def affinity(X):
     distances = np.zeros((len(X), len(X)), dtype=np.float)
 
     for i, j in zip(*np.triu_indices(len(X), k=1)):
-        name_i = normalize(X[i, 0])
+        name_i = normalize_name(X[i, 0])
         aff_i = X[i, 1]
-        initials_i = initials(name_i)
-        name_j = normalize(X[j, 0])
+        initials_i = name_initials(name_i)
+        name_j = normalize_name(X[j, 0])
         aff_j = X[j, 1]
-        initials_j = initials(name_j)
+        initials_j = name_initials(name_j)
 
         # Names and affiliations match
         if (name_i == name_j and aff_i == aff_j):
@@ -112,38 +71,40 @@ def affinity(X):
 def blocking(X):
     """Blocking function using last name and first initial as key."""
     def last_name_first_initial(name):
+        names = name.split(",", 1)
+
         try:
-            last_name, other_names = name.split(",", 1)
-            return "%s %s" % (last_name, other_names.strip()[0])
-        except:
-            return name
+            name = "%s %s" % (names[0], names[1].strip()[0])
+        except IndexError:
+            name = names[0]
+
+        name = normalize_name(name)
+        return name
 
     blocks = []
 
     for name in X[:, 0]:
-        blocks.append(normalize(last_name_first_initial(name)))
+        blocks.append(last_name_first_initial(name))
 
     return np.array(blocks)
 
 
 if __name__ == "__main__":
     # Load data
-    X = np.load("data/authors-X.npy")
-    truth = np.load("data/authors-clusters.npy")
+    data = np.load("data/author-disambiguation.npz")
+    X = data["X"]
+    truth = data["y"]
 
-    # Split into train and test sets
-    train, test = train_test_split(np.arange(len(X)),
-                                   test_size=0.75, random_state=42)
-    y = -np.ones(len(X), dtype=np.int)
-    y[train] = truth[train]
-
-    # Semi-supervised block clustering
+    # Block clustering with fixed threshold
     block_clusterer = BlockClustering(
         blocking=blocking,
-        base_estimator=ScipyHierarchicalClustering(affinity=affinity,
-                                                   method="complete"),
+        base_estimator=ScipyHierarchicalClustering(
+            threshold=0.5,
+            affinity=affinity,
+            method="complete"),
+        verbose=3,
         n_jobs=-1)
-    block_clusterer.fit(X, y=y)
+    block_clusterer.fit(X)
     labels = block_clusterer.labels_
 
     # Print clusters
@@ -153,11 +114,11 @@ if __name__ == "__main__":
         for name, affiliation in X[labels == cluster]:
             entries.add((name, affiliation))
 
-        print "Cluster #%d = %s" % (cluster, entries)
-    print
+        print("Cluster #%d = %s" % (cluster, entries))
+    print()
 
     # Statistics
-    print "Number of blocks =", len(block_clusterer.clusterers_)
-    print "True number of clusters", len(np.unique(truth))
-    print "Number of computed clusters", len(np.unique(labels))
-    print "Paired F-score =", paired_f_score(truth, labels)
+    print("Number of blocks =", len(block_clusterer.clusterers_))
+    print("True number of clusters", len(np.unique(truth)))
+    print("Number of computed clusters", len(np.unique(labels)))
+    print("Paired F-score =", paired_f_score(truth, labels))

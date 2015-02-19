@@ -19,6 +19,10 @@ from itertools import groupby
 from sklearn.metrics.cluster.supervised import check_clusterings
 
 
+def _zero(x, y):
+    return 0.0
+
+
 def paired_precision_recall_fscore(labels_true, labels_pred):
     """Compute the pairwise variant of precision, recall and F-score.
 
@@ -58,19 +62,15 @@ def paired_precision_recall_fscore(labels_true, labels_pred):
         raise ValueError(
             "input labels must not be empty.")
 
-    f_one = lambda x, y: 1.0
-    f_zero = lambda x, y: 0.0
-    f_mult = mul
-
     # Assigns each label to its own cluster
     default_clustering = range(len(labels_pred))
 
     # Calculate precision
     numerator = _general_merge_distance(labels_true, labels_pred,
-                                        fm=f_zero, fs=f_mult)
+                                        fm=_zero, fs=mul)
     denominator = _general_merge_distance(default_clustering,
                                           labels_pred,
-                                          fm=f_zero, fs=f_mult)
+                                          fm=_zero, fs=mul)
     try:
         precision = 1.0 - numerator/denominator
     except ZeroDivisionError:
@@ -78,10 +78,10 @@ def paired_precision_recall_fscore(labels_true, labels_pred):
 
     # Calculate recall
     numerator = _general_merge_distance(labels_true, labels_pred,
-                                        fm=f_mult, fs=f_zero)
+                                        fm=mul, fs=_zero)
     denominator = _general_merge_distance(labels_true,
                                           default_clustering,
-                                          fm=f_mult, fs=f_zero)
+                                          fm=mul, fs=_zero)
     try:
         recall = 1.0 - numerator/denominator
     except ZeroDivisionError:

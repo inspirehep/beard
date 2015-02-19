@@ -24,10 +24,23 @@ from sklearn.preprocessing import StandardScaler
 from ..pairs import PairTransformer
 from ..pairs import CosineSimilarity
 from ..pairs import AbsoluteDifference
+from ...utils import FuncTransformer
 
 
 def test_pair_transformer():
     """Test for PairTransformer."""
+    X = np.array([[0, 1], [2, 0], [2, 5]], dtype=np.float)
+    tf = PairTransformer(element_transformer=FuncTransformer(lambda v: v + 1))
+    Xt = tf.fit_transform(X)
+    assert_array_almost_equal(Xt, X + 1)
+
+    X = np.array([[0, 1], [2, 0], [2, 5],
+                  [0, 1], [2, 0], [2, 5]], dtype=np.float)
+    tf = PairTransformer(element_transformer=FuncTransformer(lambda v: v + 1),
+                         groupby=lambda r: r[0])
+    Xt = tf.fit_transform(X)
+    assert_array_almost_equal(Xt, X + 1)
+
     X = np.array([[0, 1], [2, 3], [4, 5]], dtype=np.float)
     Xt = PairTransformer(element_transformer=MinMaxScaler()).fit_transform(X)
     assert_array_almost_equal(Xt, [[0, 0.2], [0.4, 0.6], [0.8, 1.0]])
