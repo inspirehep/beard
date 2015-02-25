@@ -273,3 +273,40 @@ class AbsoluteDifference(BaseEstimator, TransformerMixin):
         X2 = X[:, n_features:]
 
         return np.abs(X1 - X2)
+
+class SetJaccard(TransformerMixin):
+	"""Measure How much the 2 elements of a pair have in common"""
+    def __init__(self):
+        pass 
+    
+    def fit(self, X, y=None):
+	"""(Do nothing).
+
+        Parameters
+        ----------
+        :param X: array-like, shape (n_samples, n_features)
+            Input data.
+
+        Returns
+        -------
+        :returns: self
+        """
+        return self 
+    
+    def transform(self, X):    
+	"""get the intersection of the 2 co-authors set and compute the similarity as intersection over union
+
+        Parameters
+        ----------
+        :param X: array-like, shape (n_samples, n_features)
+            Input data.
+
+        Returns
+        -------
+        :returns: Xt which is an array of similarity values
+        """  
+
+        Xt= map(lambda x: float(len(x[0].intersection(x[1]))) / float(len(x[0].union(x[1]))) , X)
+        Xt = np.array(X_).reshape((-1, 1))
+        return Xt 
+
