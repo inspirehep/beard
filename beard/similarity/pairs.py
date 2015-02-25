@@ -10,6 +10,7 @@
 """Transformers for paired data.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. code co-author:: Hussein AL-NATSHEH <hussein.al.natseh@cern.ch>
 
 """
 import numpy as np
