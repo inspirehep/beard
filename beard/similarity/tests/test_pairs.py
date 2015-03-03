@@ -10,7 +10,7 @@
 """Tests of transformers for paired data.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
-
+.. codeauthor:: Hussein AL-NATSHEH <h.natsheh@ciapple.com>
 """
 
 import numpy as np
@@ -24,6 +24,7 @@ from sklearn.preprocessing import StandardScaler
 from ..pairs import PairTransformer
 from ..pairs import CosineSimilarity
 from ..pairs import AbsoluteDifference
+from ..pairs import JaccardSimilarity
 from ...utils import FuncTransformer
 
 
@@ -87,3 +88,15 @@ def test_absolute_difference():
 
     Xt = AbsoluteDifference().fit_transform(sp.csr_matrix(X))
     assert_array_almost_equal(Xt, [[0, 0], [1, 1], [0, 0], [1, 1]])
+
+def test_JaccardSimilarity():
+    X=np.array([[0,1,0,1, 0,1,0,1],
+                [0,0,1,1, 0,1,0,1],
+                [0,1,0,1, 0,0,1,0],
+                [1,0,1,1, 1,1,0,1]])
+   
+    Xt = JaccardSimilarity().fit_transform(X)
+    assert_array_almost_equal(Xt, [[ 1.     ],[ 0.33333333],[ 0.        ],[ 0.5       ]])
+
+    Xt = JaccardSimilarity().fit_transform(sp.csr_matrix(X))
+    assert_array_almost_equal(Xt, [[ 1.     ],[ 0.33333333],[ 0.        ],[ 0.5       ]])
