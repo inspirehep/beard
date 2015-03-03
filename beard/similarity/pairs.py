@@ -349,4 +349,4 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
                     numerator= np.dot(X1[i],X2[i])
                     Xt.append(numerator / np.count_nonzero(X1[i] + X2[i]))
         
-        return np.array(Xt).reshape(-1,1)
+        return np.array(Xt).reshape(-1, 1)
