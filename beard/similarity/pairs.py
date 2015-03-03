@@ -14,7 +14,6 @@
 
 """
 from __future__ import division
-from __future__ import print_function
 
 import numpy as np
 import scipy.sparse as sp
@@ -280,7 +279,8 @@ class AbsoluteDifference(BaseEstimator, TransformerMixin):
         return np.abs(X1 - X2)
 
 class JaccardSimilarity(BaseEstimator, TransformerMixin):
-    """ Jaccard Similarity is the intersection between 2 sets over the union of them
+    """ Jaccard Similarity is the intersection between 2 sets over 
+    the union of them
         
     """
 
@@ -302,9 +302,11 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
         return self 
     
     def transform(self, X):    
-	"""Get the intersection and the union of the 2 feature sets and compute the Jaccard similarity as intersection over union
-         Here, since we have vectorized representation of the input, we calculate the intersection as the dot product
-         and the union as the count of non_zeros of the addition of the 2 vectors
+        """Get the intersection and the union of the 2 feature sets 
+        and compute the Jaccard similarity as intersection over union
+        Here, since we have vectorized representation of the input, we 
+        calculate the intersection as the dot product and the union as 
+        the count of non_zeros of the addition of the 2 vectors
 
         Parameters
         ----------
@@ -321,23 +323,30 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
         sparse = sp.issparse(X)
 
         if sparse and not sp.isspmatrix_csr(X):
-            
             X = X.tocsr()
-        
-
+            
         X1 = X[:, :n_features]
         X2 = X[:, n_features:]
         Xt=[]        
+        
         if sparse:
             numerator = np.asarray(X1.multiply(X2).sum(axis=1)).ravel()
             for i in range(n_samples):
-                Xt.append(numerator[i]/(X1[i]+X2[i]).nnz)
-
+                
+                if (X1[i] + X2[i]).nnz == 0.0:
+                    Xt.append(0.0)
+                    
+                else:
+                    Xt.append(numerator[i] / (X1[i] + X2[i]).nnz)
+                
         else:
-              for i in range(n_samples):
-                  if np.count_nonzero(X1[i]+ X2[i]) == 0:
-                      Xt.append(0.0)
-                  else:
-                      Xt.append(np.dot(X1[i],X2[i]) / np.count_nonzero(X1[i]+ X2[i]))
+            for i in range(n_samples):
+                
+                if np.count_nonzero(X1[i] + X2[i]) == 0:
+                    Xt.append(0.0)
+                
+                else:
+                    numerator= np.dot(X1[i],X2[i])
+                    Xt.append(numerator / np.count_nonzero(X1[i] + X2[i]))
         
         return np.array(Xt).reshape(-1,1)
