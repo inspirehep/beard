@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Beard.
-# Copyright (C) 2014 CERN.
+# Copyright (C) 2014, 2015 CERN.
 #
 # Beard is a free software; you can redistribute it and/or modify it
 # under the terms of the Revised BSD License; see LICENSE file for
@@ -10,17 +10,131 @@
 """Clustering evaluation metrics.
 
 .. codeauthor:: Evangelos Tzemis <evangelos.tzemis@cern.ch>
+.. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
 
 """
 from __future__ import division
+
 import numpy as np
 from operator import mul
 from itertools import groupby
+
 from sklearn.metrics.cluster.supervised import check_clusterings
 
 
-def _zero(x, y):
-    return 0.0
+def b3_precision_recall_fscore(labels_true, labels_pred):
+    """Compute the B^3 variant of precision, recall and F-score.
+
+    Parameters
+    ----------
+    :param labels_true: 1d array containing the ground truth cluster labels.
+    :param labels_pred: 1d array containing the predicted cluster labels.
+
+    Returns
+    -------
+    :return float precision: calculated precision
+    :return float recall: calculated recall
+    :return float f_score: calculated f_score
+
+    Reference
+    ---------
+    Amigo, Enrique, et al. "A comparison of extrinsic clustering evaluation
+    metrics based on formal constraints." Information retrieval 12.4
+    (2009): 461-486.
+    """
+    # Check that labels_* are 1d arrays and have the same size
+    labels_true, labels_pred = check_clusterings(labels_true, labels_pred)
+
+    # Check that input given is not the empty set
+    if labels_true.shape == (0, ):
+        raise ValueError(
+            "input labels must not be empty.")
+
+    # Compute P/R/F scores
+    n_samples = len(labels_true)
+    true_clusters = {}  # true cluster_id => set of sample indices
+    pred_clusters = {}  # pred cluster_id => set of sample indices
+
+    for i in range(n_samples):
+        true_cluster_id = labels_true[i]
+        pred_cluster_id = labels_pred[i]
+
+        if true_cluster_id not in true_clusters:
+            true_clusters[true_cluster_id] = set()
+        if pred_cluster_id not in pred_clusters:
+            pred_clusters[pred_cluster_id] = set()
+
+        true_clusters[true_cluster_id].add(i)
+        pred_clusters[pred_cluster_id].add(i)
+
+    precision = 0.0
+    recall = 0.0
+
+    for i in range(n_samples):
+        pred_cluster_i = pred_clusters[labels_pred[i]]
+        true_cluster_i = true_clusters[labels_true[i]]
+        intersection = pred_cluster_i.intersection(true_cluster_i)
+
+        precision += len(intersection) / len(pred_cluster_i)
+        recall += len(intersection) / len(true_cluster_i)
+
+    precision /= n_samples
+    recall /= n_samples
+
+    if precision + recall == 0.0:
+        f_score = 0.0
+    else:
+        f_score = 2 * precision * recall / (precision + recall)
+
+    return precision, recall, f_score
+
+
+def b3_precision_score(labels_true, labels_pred):
+    """Compute the B^3 variant of precision.
+
+    Parameters
+    ----------
+    :param labels_true: 1d array containing the ground truth cluster labels.
+    :param labels_pred: 1d array containing the predicted cluster labels.
+
+    Returns
+    -------
+    :return float precision: calculated precision
+    """
+    p, _, _ = b3_precision_recall_fscore(labels_true, labels_pred)
+    return p
+
+
+def b3_recall_score(labels_true, labels_pred):
+    """Compute the B^3 variant of recall.
+
+    Parameters
+    ----------
+    :param labels_true: 1d array containing the ground truth cluster labels.
+    :param labels_pred: 1d array containing the predicted cluster labels.
+
+    Returns
+    -------
+    :return float recall: calculated recall
+    """
+    _, r, _ = b3_precision_recall_fscore(labels_true, labels_pred)
+    return r
+
+
+def b3_f_score(labels_true, labels_pred):
+    """Compute the B^3 variant of F-score.
+
+    Parameters
+    ----------
+    :param labels_true: 1d array containing the ground truth cluster labels.
+    :param labels_pred: 1d array containing the predicted cluster labels.
+
+    Returns
+    -------
+    :return float f_score: calculated F-score
+    """
+    _, _, f = b3_precision_recall_fscore(labels_true, labels_pred)
+    return f
 
 
 def paired_precision_recall_fscore(labels_true, labels_pred):
@@ -45,14 +159,13 @@ def paired_precision_recall_fscore(labels_true, labels_pred):
     -------
     :return float precision: calculated precision
     :return float recall: calculated recall
-    :return float harmonic_mean: calculated harmonic_mean
+    :return float f_score: calculated f_score
 
     Reference
     ---------
     Levin, Michael et al., "Citation-based bootstrapping for large-scale
     author disambiguation", Journal of the American Society for Information
     Science and Technology 63.5 (2012): 1030-1047.
-
     """
     # Check that labels_* are 1d arrays and have the same size
     labels_true, labels_pred = check_clusterings(labels_true, labels_pred)
@@ -87,15 +200,15 @@ def paired_precision_recall_fscore(labels_true, labels_pred):
     except ZeroDivisionError:
         recall = 1.0
 
-    # Calculate harmonic_mean - f_score
+    # Calculate f_score
 
-    # If both are zero (minimum score) then harmonic_mean is also zero
-    if precision+recall == 0.0:
-        harmonic_mean = 0.0
+    # If both are zero (minimum score) then f_score is also zero
+    if precision + recall == 0.0:
+        f_score = 0.0
     else:
-        harmonic_mean = 2.0*precision*recall/(precision + recall)
+        f_score = 2.0 * precision * recall / (precision + recall)
 
-    return precision, recall, harmonic_mean
+    return precision, recall, f_score
 
 
 def paired_precision_score(labels_true, labels_pred):
@@ -112,7 +225,6 @@ def paired_precision_score(labels_true, labels_pred):
     Returns
     -------
     :return float precision: calculated precision
-
     """
     p, _, _ = paired_precision_recall_fscore(labels_true, labels_pred)
     return p
@@ -132,14 +244,13 @@ def paired_recall_score(labels_true, labels_pred):
     Returns
     -------
     :return float recall: calculated recall
-
     """
     _, r, _ = paired_precision_recall_fscore(labels_true, labels_pred)
     return r
 
 
 def paired_f_score(labels_true, labels_pred):
-    """Compute the pairwise variant of F score.
+    """Compute the pairwise variant of F-score.
 
     F score can be thought as a weighted harmonic mean of the precision
     and recall, where an F score reaches its best value at 1
@@ -152,11 +263,15 @@ def paired_f_score(labels_true, labels_pred):
 
     Returns
     -------
-    :return float harmonic_mean: calculated harmonic mean (f_score)
+    :return float f_score: calculated harmonic mean (f_score)
 
     """
     _, _, f = paired_precision_recall_fscore(labels_true, labels_pred)
     return f
+
+
+def _zero(x, y):
+    return 0.0
 
 
 def _cluster_samples(labels):
@@ -170,7 +285,6 @@ def _cluster_samples(labels):
     -------
     :return: dictionary with keys the cluster ids and values a tuple containing
              the ids of elements tha belong to this cluster.
-
     """
     groupped_samples = groupby(np.argsort(labels), lambda i: labels[i])
 
@@ -230,4 +344,5 @@ def _general_merge_distance(y_true, y_pred,
                 si_cost += fm(count, total_recs)
             total_recs += count
         cost += si_cost
+
     return cost
