@@ -10,14 +10,18 @@
 """Transformers for paired data.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
-.. code co-author:: Hussein AL-NATSHEH <hussein.al.natseh@cern.ch>
+.. codeauthor:: Hussein AL-NATSHEH <h.natsheh@ciapple.com>
 
 """
+from __future__ import division
+from __future__ import print_function
+
 import numpy as np
 import scipy.sparse as sp
 
 from sklearn.base import BaseEstimator
 from sklearn.base import TransformerMixin
+
 
 
 class PairTransformer(BaseEstimator, TransformerMixin):
@@ -275,8 +279,11 @@ class AbsoluteDifference(BaseEstimator, TransformerMixin):
 
         return np.abs(X1 - X2)
 
-class SetJaccard(TransformerMixin):
-	"""Measure How much the 2 elements of a pair have in common"""
+class JaccardSimilarity(BaseEstimator, TransformerMixin):
+    """ Jaccard Similarity is the intersection between 2 sets over the union of them
+        
+    """
+
     def __init__(self):
         pass 
     
@@ -295,7 +302,9 @@ class SetJaccard(TransformerMixin):
         return self 
     
     def transform(self, X):    
-	"""get the intersection of the 2 co-authors set and compute the similarity as intersection over union
+	"""Get the intersection and the union of the 2 feature sets and compute the Jaccard similarity as intersection over union
+         Here, since we have vectorized representation of the input, we calculate the intersection as the dot product
+         and the union as the count of non_zeros of the addition of the 2 vectors
 
         Parameters
         ----------
@@ -305,9 +314,30 @@ class SetJaccard(TransformerMixin):
         Returns
         -------
         :returns: Xt which is an array of similarity values
-        """  
+        """          
 
-        Xt= map(lambda x: float(len(x[0].intersection(x[1]))) / float(len(x[0].union(x[1]))) , X)
-        Xt = np.array(X_).reshape((-1, 1))
-        return Xt 
+        n_samples, n_features_all = X.shape
+        n_features = n_features_all // 2
+        sparse = sp.issparse(X)
 
+        if sparse and not sp.isspmatrix_csr(X):
+            
+            X = X.tocsr()
+        
+
+        X1 = X[:, :n_features]
+        X2 = X[:, n_features:]
+        Xt=[]        
+        if sparse:
+            numerator = np.asarray(X1.multiply(X2).sum(axis=1)).ravel()
+            for i in range(n_samples):
+                Xt.append(numerator[i]/(X1[i]+X2[i]).nnz)
+
+        else:
+              for i in range(n_samples):
+                  if np.count_nonzero(X1[i]+ X2[i]) == 0:
+                      Xt.append(0.0)
+                  else:
+                      Xt.append(np.dot(X1[i],X2[i]) / np.count_nonzero(X1[i]+ X2[i]))
+        
+        return np.array(Xt).reshape(-1,1)
