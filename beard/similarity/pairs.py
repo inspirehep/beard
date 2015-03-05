@@ -19,6 +19,7 @@ import scipy.sparse as sp
 from sklearn.base import BaseEstimator
 from sklearn.base import TransformerMixin
 
+
 class PairTransformer(BaseEstimator, TransformerMixin):
 
     """Apply a transformer on all elements in paired data."""
@@ -274,10 +275,10 @@ class AbsoluteDifference(BaseEstimator, TransformerMixin):
 
         return np.abs(X1 - X2)
 
+
 class JaccardSimilarity(BaseEstimator, TransformerMixin):
     """Jaccard Similarity is the intersection between 2 sets over
-    the union of them
-        
+    the union of them  
     """
 
     def __init__(self):
@@ -285,12 +286,9 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
     
     def fit(self, X, y=None):
         """(Do nothing).
-
         Parameters
         ----------
-        :param X: array-like, shape (n_samples, n_features)
-            Input data.
-
+        :param X: array-like, shape (n_samples, n_features) Input data.
         Returns
         -------
         :returns: self
@@ -312,18 +310,15 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
         Returns
         -------
         :returns: Xt which is an array of similarity values
-        """ 
+        """
         n_samples, n_features_all = X.shape
         n_features = n_features_all // 2
         sparse = sp.issparse(X)
-
         if sparse and not sp.isspmatrix_csr(X):
             X = X.tocsr()
-            
         X1 = X[:, :n_features]
         X2 = X[:, n_features:]
         Xt = []
-        
         if sparse:
             numerator = np.asarray(X1.multiply(X2).sum(axis=1)).ravel()
             for i in range(n_samples):
@@ -338,5 +333,4 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
                 else:
                     numerator = np.dot(X1[i], X2[i])
                     Xt.append(numerator / np.count_nonzero(X1[i] + X2[i]))
-        
         return np.array(Xt).reshape(-1, 1)
