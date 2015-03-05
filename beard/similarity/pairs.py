@@ -282,6 +282,7 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
     """
     def __init__(self):
         pass
+    
     def fit(self, X, y=None):
         """(Do nothing).
         Parameters
@@ -292,6 +293,7 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
         :returns: self
         """
         return self
+    
     def transform(self, X):
         """Get the intersection and the union of the 2 feature sets
         and compute the Jaccard similarity as intersection over union
@@ -308,7 +310,7 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
         -------
         :returns: Xt which is an array of similarity values
         """
-        X = sp.csr_matrix(X)        
+        X = sp.csr_matrix(X)
         n_samples, n_features_all = X.shape
         n_features = n_features_all // 2
         X1 = X[:, :n_features]
