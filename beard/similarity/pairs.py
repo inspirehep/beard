@@ -14,14 +14,10 @@
 
 """
 from __future__ import division
-
 import numpy as np
 import scipy.sparse as sp
-
 from sklearn.base import BaseEstimator
 from sklearn.base import TransformerMixin
-
-
 
 class PairTransformer(BaseEstimator, TransformerMixin):
 
@@ -279,16 +275,16 @@ class AbsoluteDifference(BaseEstimator, TransformerMixin):
         return np.abs(X1 - X2)
 
 class JaccardSimilarity(BaseEstimator, TransformerMixin):
-    """ Jaccard Similarity is the intersection between 2 sets over 
+    """Jaccard Similarity is the intersection between 2 sets over
     the union of them
         
     """
 
     def __init__(self):
-        pass 
+        pass
     
     def fit(self, X, y=None):
-	"""(Do nothing).
+        """(Do nothing).
 
         Parameters
         ----------
@@ -299,13 +295,13 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
         -------
         :returns: self
         """
-        return self 
-    
-    def transform(self, X):    
-        """Get the intersection and the union of the 2 feature sets 
+        return self
+        
+    def transform(self, X):
+        """Get the intersection and the union of the 2 feature sets
         and compute the Jaccard similarity as intersection over union
-        Here, since we have vectorized representation of the input, we 
-        calculate the intersection as the dot product and the union as 
+        Here, since we have vectorized representation of the input, we
+        calculate the intersection as the dot product and the union as
         the count of non_zeros of the addition of the 2 vectors
 
         Parameters
@@ -316,8 +312,7 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
         Returns
         -------
         :returns: Xt which is an array of similarity values
-        """          
-
+        """ 
         n_samples, n_features_all = X.shape
         n_features = n_features_all // 2
         sparse = sp.issparse(X)
@@ -327,26 +322,21 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
             
         X1 = X[:, :n_features]
         X2 = X[:, n_features:]
-        Xt=[]        
+        Xt = []
         
         if sparse:
             numerator = np.asarray(X1.multiply(X2).sum(axis=1)).ravel()
             for i in range(n_samples):
-                
                 if (X1[i] + X2[i]).nnz == 0.0:
                     Xt.append(0.0)
-                    
                 else:
                     Xt.append(numerator[i] / (X1[i] + X2[i]).nnz)
-                
         else:
             for i in range(n_samples):
-                
                 if np.count_nonzero(X1[i] + X2[i]) == 0:
                     Xt.append(0.0)
-                
                 else:
-                    numerator= np.dot(X1[i],X2[i])
+                    numerator = np.dot(X1[i], X2[i])
                     Xt.append(numerator / np.count_nonzero(X1[i] + X2[i]))
         
         return np.array(Xt).reshape(-1, 1)
