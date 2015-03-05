@@ -90,13 +90,11 @@ def test_absolute_difference():
     assert_array_almost_equal(Xt, [[0, 0], [1, 1], [0, 0], [1, 1]])
 
 def test_JaccardSimilarity():
-    X=np.array([[0, 1, 0, 1, 0, 1, 0, 1],
-                [0, 0, 1, 1, 0, 1, 0, 1],
-                [0, 1, 0, 1, 0, 0, 1, 0],
-                [1, 0, 1, 1, 1, 1, 0, 1]])
-   
+    X = np.array([[0, 1, 0, 1, 0, 1, 0, 1],
+                  [0, 0, 1, 1, 0, 1, 0, 1],
+                  [0, 1, 0, 1, 0, 0, 1, 0],
+                  [1, 0, 1, 1, 1, 1, 0, 1]])
     Xt = JaccardSimilarity().fit_transform(X)
     assert_array_almost_equal(Xt, [[1.], [0.33333333], [0.], [0.5]])
-
     Xt = JaccardSimilarity().fit_transform(sp.csr_matrix(X))
     assert_array_almost_equal(Xt, [[1.], [0.33333333], [0.], [0.5]])
