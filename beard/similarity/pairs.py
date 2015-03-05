@@ -278,12 +278,10 @@ class AbsoluteDifference(BaseEstimator, TransformerMixin):
 
 class JaccardSimilarity(BaseEstimator, TransformerMixin):
     """Jaccard Similarity is the intersection between 2 sets over
-    the union of them  
+    the union of them
     """
-
     def __init__(self):
         pass
-    
     def fit(self, X, y=None):
         """(Do nothing).
         Parameters
@@ -294,7 +292,6 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
         :returns: self
         """
         return self
-        
     def transform(self, X):
         """Get the intersection and the union of the 2 feature sets
         and compute the Jaccard similarity as intersection over union
@@ -311,26 +308,12 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
         -------
         :returns: Xt which is an array of similarity values
         """
+        X = sp.csr_matrix(X)        
         n_samples, n_features_all = X.shape
         n_features = n_features_all // 2
-        sparse = sp.issparse(X)
-        if sparse and not sp.isspmatrix_csr(X):
-            X = X.tocsr()
         X1 = X[:, :n_features]
         X2 = X[:, n_features:]
-        Xt = []
-        if sparse:
-            numerator = np.asarray(X1.multiply(X2).sum(axis=1)).ravel()
-            for i in range(n_samples):
-                if (X1[i] + X2[i]).nnz == 0.0:
-                    Xt.append(0.0)
-                else:
-                    Xt.append(numerator[i] / (X1[i] + X2[i]).nnz)
-        else:
-            for i in range(n_samples):
-                if np.count_nonzero(X1[i] + X2[i]) == 0:
-                    Xt.append(0.0)
-                else:
-                    numerator = np.dot(X1[i], X2[i])
-                    Xt.append(numerator / np.count_nonzero(X1[i] + X2[i]))
+        numerator = np.asarray(X1.multiply(X2).sum(axis=1)).ravel()
+        denominator = (X1 + X2).getnnz(axis=1)
+        Xt = numerator / denominator
         return np.array(Xt).reshape(-1, 1)
