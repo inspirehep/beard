@@ -13,7 +13,6 @@
 .. codeauthor:: Hussein AL-NATSHEH <h.natsheh@ciapple.com>
 
 """
-from __future__ import division
 import numpy as np
 import scipy.sparse as sp
 from sklearn.base import BaseEstimator
@@ -277,14 +276,12 @@ class AbsoluteDifference(BaseEstimator, TransformerMixin):
 
 
 class JaccardSimilarity(BaseEstimator, TransformerMixin):
-    """Jaccard Similarity is the intersection between 2 sets over
-    the union of them
-    """
-    def __init__(self):
-        pass
+
+    """Similarity as the intersection between 2 sets over the union of them."""
 
     def fit(self, X, y=None):
         """(Do nothing).
+        
         Parameters
         ----------
         :param X: array-like, shape (n_samples, n_features) Input data.
@@ -295,11 +292,13 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """Get the intersection and the union of the 2 feature sets
+        """Compute the intersection over the union.
+        
+        Get the intersection and the union of the 2 feature sets
         and compute the Jaccard similarity as intersection over union
         Here, since we have vectorized representation of the input, we
         calculate the intersection as the dot product and the union as
-        the count of non_zeros of the addition of the 2 vectors
+        the count of non_zeros of the addition of the 2 vectors.
 
         Parameters
         ----------
