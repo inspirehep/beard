@@ -282,7 +282,7 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y=None):
         """(Do nothing).
-        
+
         Parameters
         ----------
         :param X: array-like, shape (n_samples, n_features) Input data.
@@ -294,7 +294,7 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         """Compute the intersection over the union.
-        
+
         Get the intersection and the union of the 2 feature sets
         and compute the Jaccard similarity as intersection over union
         Here, since we have vectorized representation of the input, we
