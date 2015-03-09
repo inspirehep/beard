@@ -73,7 +73,8 @@ def test_jaro_matching(s1, s2, match):
                    ('DWAYNE', 'DUANE', 0.822),
                    ('ABCDEFG', 'ABCDEFG', 1.0),
                    ('', 'ABCDEFG', 0.0),
-                   ('ABCDEFG', 'HIGKLMN', 0.0)))
+                   ('ABCDEFG', 'HIGKLMN', 0.0),
+                   ('apple', 'apple', 1.0)))
 def test_jaro(s1, s2, match):
     """Test jaro_similarity_metric behaviour."""
     assert_almost_equal(jaro(s1, s2), match, 3)
