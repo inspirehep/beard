@@ -335,7 +335,7 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
             denominator = A.reshape(-1,)
             Xt = numerator / denominator
             return np.array(Xt).reshape(-1, 1)
-        X = np.array(X) # Just to make sure that X array is a numpy array
+        X = np.array(X)  # Just to make sure that X array is a numpy array
         if len(X[X.nonzero()]) == 0.:
             return np.zeros(n_samples).reshape(-1, 1)
         X1 = X[:, :n_features]
