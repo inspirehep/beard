@@ -77,17 +77,17 @@ def _jaro_matching(s1, s2):
                     if j not in s2_matched_positions:
                         matches += 1
                         s2_matched_positions.append(j)
-                    s1_matching_letters.append((i, letter))
-                    break
+                        s1_matching_letters.append((i, letter))
+                        break
 
     for letter, (s1_positions, s2_positions) in letters_cache.items():
         for j in s2_positions:
             for i in s1_positions:
-                if i - H <= j <= i + H:
+                if j - H <= i <= j + H:
                     if i not in s1_matched_positions:
                         s1_matched_positions.append(i)
-                    s2_matching_letters.append((j, letter))
-                    break
+                        s2_matching_letters.append((j, letter))
+                        break
 
     s1_matching_letters.sort()
     s2_matching_letters.sort()
