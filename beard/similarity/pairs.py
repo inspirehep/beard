@@ -278,7 +278,11 @@ class AbsoluteDifference(BaseEstimator, TransformerMixin):
 
 class JaccardSimilarity(BaseEstimator, TransformerMixin):
 
-    """Similarity as the intersection between 2 sets over the union of them."""
+    """Jaccard similarity on paired data.
+
+        The Jaccard similarity of two elements in a pair is defined as the
+        ratio between the size of their intersection and the size of their
+        union."""
 
     def fit(self, X, y=None):
         """(Do nothing).
@@ -286,6 +290,7 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         :param X: array-like, shape (n_samples, n_features) Input data.
+
         Returns
         -------
         :returns: self
@@ -293,13 +298,14 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """Compute the intersection over the union.
+        """Compute the Jaccard similarity for all pairs of elements in ``X``.
 
-        Get the intersection and the union of the 2 feature sets
-        and compute the Jaccard similarity as intersection over union
-        Here, since we have vectorized representation of the input, we
-        calculate the intersection as the dot product and the union as
-        the count of non_zeros of the addition of the 2 vectors.
+        Rows i in ``X`` are assumed to represent pairs, where
+        ``X[i, :n_features]`` and ``X[i, n_features:]`` correspond to their two
+        individual elements, each representing a set. Calling ``transform``
+        computes the Jaccard similarity between these sets, i.e. such that
+        ``Xt[i]`` is the Jaccard similarity of ``X[i, :n_features]`` and
+        ``X[i, n_features:]``.
 
         Parameters
         ----------
@@ -308,7 +314,7 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        :returns: Xt which is an array of similarity values
+        :returns: Xt array-like, shape (n_samples, 1) The transformed data.
         """
         X = sp.csr_matrix(X)
         n_samples, n_features_all = X.shape
