@@ -280,9 +280,10 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
 
     """Jaccard similarity on paired data.
 
-        The Jaccard similarity of two elements in a pair is defined as the
-        ratio between the size of their intersection and the size of their
-        union."""
+    The Jaccard similarity of two elements in a pair is defined as the
+    ratio between the size of their intersection and the size of their
+    union.
+    """
 
     def fit(self, X, y=None):
         """(Do nothing).
@@ -316,12 +317,32 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
         -------
         :returns: Xt array-like, shape (n_samples, 1) The transformed data.
         """
-        X = sp.csr_matrix(X)
         n_samples, n_features_all = X.shape
         n_features = n_features_all // 2
+        sparse = sp.issparse(X)
+        if sparse and not sp.isspmatrix_csr(X):
+            X = X.tocsr()
+        if sparse:
+            if X.data[X.data != 0.].sum() == 0:
+                return np.zeros(n_samples).reshape(-1, 1)
+            X1 = X[:, :n_features]
+            X2 = X[:, n_features:]
+            numerator = np.asarray(X1.multiply(X2).sum(axis=1)).ravel()
+            X_sum = X1 + X2
+            X_sum.data[X_sum.data != 0.] = 1
+            M = X_sum.sum(axis=1)
+            A = M.getA()
+            denominator = A.reshape(-1,)
+            Xt = numerator / denominator
+            return np.array(Xt).reshape(-1, 1)
+        X = np.array(X) # Just to make sure that X array is a numpy array
+        if len(X[X.nonzero()]) == 0.:
+            return np.zeros(n_samples).reshape(-1, 1)
         X1 = X[:, :n_features]
         X2 = X[:, n_features:]
-        numerator = np.asarray(X1.multiply(X2).sum(axis=1)).ravel()
-        denominator = (X1 + X2).getnnz(axis=1)
+        numerator = (X1 * X2).sum(axis=1)
+        X_sum = X1 + X2
+        X_sum[X_sum.nonzero()] = 1
+        denominator = X_sum.sum(axis=1)
         Xt = numerator / denominator
         return np.array(Xt).reshape(-1, 1)
