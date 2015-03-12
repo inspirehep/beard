@@ -427,7 +427,8 @@ if __name__ == "__main__":
 
         indices = {}
         X = np.empty((len(signatures), 1), dtype=np.object)
-        for i, signature in enumerate(signatures.values()):
+        for i, signature in enumerate(sorted(signatures.values(),
+                                             key=lambda s: s["signature_id"])):
             X[i, 0] = signature
             indices[signature["signature_id"]] = i
 
