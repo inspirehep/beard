@@ -10,6 +10,7 @@
 """Test of clustering wrappers.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. codeauthor:: Hussein AL-NATSHEH <h.natsheh@ciapple.com>
 
 """
 from __future__ import division
@@ -56,6 +57,14 @@ def test_scipy_hierarchical_clustering():
     clusterer.set_params(n_clusters=10)
     labels = clusterer.labels_
     assert_equal(len(np.unique(labels)), 10)
+
+    # Using precomputed distances and silhouette_score
+    d = euclidean_distances(X)
+    d = (d + d.T) / 2.0
+    d /= d.max()
+    clusterer = ScipyHierarchicalClustering(dynamic_threshold="silhouette")
+    labels = clusterer.fit_predict(d)
+    assert_array_equal([25, 25, 25, 25], np.bincount(labels))
 
     # Change threshold
     clusterer.set_params(threshold=clusterer.linkage_[-4,  2])
