@@ -336,7 +336,7 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
             denominator = A.reshape(-1,)
             Xt = numerator / denominator
             return np.array(Xt).reshape(-1, 1)
-        else: # dense case
+        else:
             if len(X[X.nonzero()]) == 0.:
                 return np.zeros(n_samples).reshape(-1, 1)
             numerator = (X1 * X2).sum(axis=1)
