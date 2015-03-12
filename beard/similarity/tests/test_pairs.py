@@ -99,3 +99,11 @@ def test_JaccardSimilarity():
     assert_array_almost_equal(Xt, [[1.], [0.33333333], [0.], [0.5]])
     Xt = JaccardSimilarity().fit_transform(sp.csr_matrix(X))
     assert_array_almost_equal(Xt, [[1.], [0.33333333], [0.], [0.5]])
+    X = np.array([[0, 0, 0, 0, 0, 0, 0, 0],
+                  [0, 0, 0, 0, 0, 0, 0, 0],
+                  [0, 0, 0, 0, 0, 0, 0, 0],
+                  [0, 0, 0, 0, 0, 0, 0, 0]])
+    Xt = JaccardSimilarity().fit_transform(X)
+    assert_array_almost_equal(Xt, [[0.], [0.], [0.], [0.]])
+    Xt = JaccardSimilarity().fit_transform(sp.csr_matrix(X))
+    assert_array_almost_equal(Xt, [[0.], [0.], [0.], [0.]])
