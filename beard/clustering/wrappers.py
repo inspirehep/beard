@@ -10,6 +10,7 @@
 """Scikit-Learn compatible wrappers of clustering algorithms.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. codeauthor:: Hussein AL-NATSHEH <h.natsheh@ciapple.com>
 
 """
 import numpy as np
@@ -18,6 +19,7 @@ import scipy.cluster.hierarchy as hac
 
 from sklearn.base import BaseEstimator
 from sklearn.base import ClusterMixin
+from sklearn.metrics import silhouette_score
 
 from beard.metrics import paired_f_score
 
@@ -37,7 +39,8 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
 
     def __init__(self, method="single", affinity="euclidean", threshold=None,
                  n_clusters=1, criterion="distance", depth=2, R=None,
-                 monocrit=None, scoring=paired_f_score):
+                 monocrit=None, scoring=paired_f_score,
+                 dynamic_threshold=None):
         """Initialize.
 
         Parameters
@@ -82,6 +85,13 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         :param scoring: callable
             The scoring function to maximize in (semi-)supervised clustering
             (when y!=None).
+
+        :param dynamic_threshold: string or None
+            The criteria of computing a dynamic threshold folr flat clustering:
+            - "silhouette": compute the best cutting value by silhouette_score.
+            - "elbow": future work.
+            - "shannon": future work.
+            - "inter_intra": future work.
         """
         self.method = method
         self.affinity = affinity
@@ -92,6 +102,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         self.R = R
         self.monocrit = monocrit
         self.scoring = scoring
+        self.dynamic_threshold = dynamic_threshold
 
     def fit(self, X, y=None):
         """Perform hierarchical clustering on input data.
@@ -131,14 +142,13 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
                                         metric=self.affinity)
 
         # Adjust threshold if y is provided
+        best_threshold = self.linkage_[-1, 2]
+        best_score = -np.inf
         if y is not None:
             train = (y != -1)
 
             if train.sum() == 0:
                 return self
-
-            best_threshold = self.linkage_[-1, 2]
-            best_score = -np.inf
 
             thresholds = np.concatenate(([0],
                                          self.linkage_[:, 2],
@@ -159,6 +169,24 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
                     best_threshold = threshold
 
             self.best_threshold_ = best_threshold
+
+        # Compute best_threshild_ if dynamic_threshold is provided
+        if self.dynamic_threshold is not None:
+            if self.dynamic_threshold == 'silhouette':
+                thresholds = self.linkage_[:, 2]
+                for threshold in thresholds:
+                    labels = hac.fcluster(self.linkage_, threshold,
+                                          criterion=self.criterion)
+                    min_check = len(np.unique(labels)) > 1
+                    max_check = len(np.unique(labels)) < X.shape[0]
+                    affinity_check = X.shape[0] == X.shape[1]
+                    if min_check and max_check and affinity_check:
+                        score = silhouette_score(X, labels,
+                                                 metric="precomputed")
+                        if score >= best_score:
+                            best_score = score
+                            best_threshold = threshold
+                self.best_threshold_ = best_threshold
 
         return self
 
