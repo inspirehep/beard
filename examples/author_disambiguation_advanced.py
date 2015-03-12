@@ -24,15 +24,72 @@ The pipeline is made of two steps:
        the best cut-off threshold is chosen so as to maximize some scoring
        metric on the provided labeled data.
 
+Usage:
+
+    1) Train a distance model
+
+    python author_disambiguation_advanced.py \
+        --distance_pairs=pairs.json \
+        --distance_model=model.dat \
+        --input_signatures=signatures.json \
+        --input_records=records.json
+
+    2) Cluster signatures using a trained distance model
+
+    python author_disambiguation_advanced.py \
+        --distance_model=model.dat \
+        --input_signatures=signatures.json \
+        --input_records=records.json \
+        --output_clusters=clusters.json
+
+    3) Evaluate disambiguation on known clusters
+
+    python author_disambiguation_advanced.py \
+        --distance_model=model.dat \
+        --input_signatures=signatures.json \
+        --input_records=records.json \
+        --input_clusters=clusters.json \
+        --clustering_test_size=0.9 \
+        --verbose=1
+
+Input files are expected to be formatted in JSON, using the following
+conventions:
+
+    - signatures.json : list of dictionaries holding metadata about signatures
+
+        [{"signature_id": 0,
+          "author_name": "Doe, John",
+          "publication_id": 10, ...}, { ... }, ...]
+
+    - records.json : list of dictionaries holding metadata about records
+
+        [{"publication_id": 0,
+          "title": "Author disambiguation using Beard", ... }, { ... }, ...]
+
+    - clusters.json : dictionary, where keys are cluster labels and values
+        are the `signature_id` of the signatures grouped in the clusters.
+        Signatures assigned to the cluster with label "-1" are not clustered.
+
+        {"0": [0, 1, 3], "1": [2, 5], ...}
+
+        Note: predicted clusters are output in the same format.
+
+    - pairs.json : list of tuples (`signature_id1`, `signature_id2`, `target`),
+        where `target = 0` if both signatures belong to the same author,
+        and `target = 1` otherwise.
+
+        [(0, 1, 0), (2, 3, 0), (4, 5, 1), ...]
+
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
 
 """
 
 from __future__ import print_function
 
+import argparse
+import json
 import pickle
 import numpy as np
-import sys
 
 from sklearn.cross_validation import train_test_split
 from sklearn.ensemble import GradientBoostingClassifier
@@ -44,7 +101,7 @@ from scipy.spatial.distance import squareform
 
 from beard.clustering import BlockClustering
 from beard.clustering import ScipyHierarchicalClustering
-from beard.metrics import paired_f_score
+from beard.metrics import b3_f_score
 from beard.similarity import PairTransformer
 from beard.similarity import CosineSimilarity
 from beard.similarity import AbsoluteDifference
@@ -54,8 +111,10 @@ from beard.utils import FuncTransformer
 from beard.utils import Shaper
 
 
-def resolve_publications(signatures, records):
-    """Resolve the 'publication' field in signatures."""
+def load_signatures(signatures_filename, records_filename):
+    signatures = json.load(open(signatures_filename, "r"))
+    records = json.load(open(records_filename, "r"))
+
     if isinstance(signatures, list):
         signatures = {s["signature_id"]: s for s in signatures}
 
@@ -324,60 +383,110 @@ def blocking(X):
 
 
 if __name__ == "__main__":
-    # Load paired data
-    X, y, signatures, records = pickle.load(open(sys.argv[1], "r"))
-    signatures, records = resolve_publications(signatures, records)
+    # Parse command line arugments
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--distance_pairs", default=None, type=str)
+    parser.add_argument("--distance_model", default=None, type=str)
+    parser.add_argument("--input_signatures", default=None, type=str)
+    parser.add_argument("--input_records", default=None, type=str)
+    parser.add_argument("--input_clusters", default=None, type=str)
+    parser.add_argument("--output_clusters", default=None, type=str)
+    parser.add_argument("--clustering_method", default="average", type=str)
+    parser.add_argument("--clustering_threshold", default=None, type=float)
+    parser.add_argument("--clustering_test_size", default=None, type=float)
+    parser.add_argument("--clustering_random_state", default=42, type=int)
+    parser.add_argument("--verbose", default=1, type=int)
+    parser.add_argument("--n_jobs", default=-1, type=int)
+    args = parser.parse_args()
 
-    Xt = np.empty((len(X), 2), dtype=np.object)
-    for k, (i, j) in enumerate(X):
-        Xt[k, 0] = signatures[i]
-        Xt[k, 1] = signatures[j]
-    X = Xt
+    # Learn a distance model
+    if args.distance_pairs:
+        pairs = json.load(open(args.distance_pairs, "r"))
+        signatures, records = load_signatures(args.input_signatures,
+                                              args.input_records)
 
-    # Learn a distance estimator on paired signatures
-    distance_estimator = build_distance_estimator(X, y)
+        X = np.empty((len(pairs), 2), dtype=np.object)
+        y = np.empty(len(pairs), dtype=np.int)
 
-    # Load signatures to cluster
-    signatures, truth, records = pickle.load(open(sys.argv[2], "r"))
-    _, records = resolve_publications(signatures, records)
+        for k, (i, j, target) in enumerate(pairs):
+            X[k, 0] = signatures[i]
+            X[k, 1] = signatures[j]
+            y[k] = target
 
-    X = np.empty((len(signatures), 1), dtype=np.object)
-    for i, signature in enumerate(signatures):
-        X[i, 0] = signature
+        # Learn a distance estimator on paired signatures
+        distance_estimator = build_distance_estimator(X, y)
+        pickle.dump(distance_estimator,
+                    open(args.distance_model, "w"),
+                    protocol=pickle.HIGHEST_PROTOCOL)
 
-    # Semi-supervised block clustering
-    train, test = train_test_split(np.arange(len(X)),
-                                   test_size=0.75, random_state=42)
-    y = -np.ones(len(X), dtype=np.int)
-    y[train] = truth[train]
+    # Clustering
+    else:
+        distance_estimator = pickle.load(open(args.distance_model, "r"))
+        signatures, records = load_signatures(args.input_signatures,
+                                              args.input_records)
 
-    clusterer = BlockClustering(
-        blocking=blocking,
-        base_estimator=ScipyHierarchicalClustering(
-            threshold=0.9995,
-            affinity=affinity,
-            method="complete"),
-        verbose=3,
-        n_jobs=-1).fit(X, y)
+        indices = {}
+        X = np.empty((len(signatures), 1), dtype=np.object)
+        for i, signature in enumerate(sorted(signatures.values(),
+                                             key=lambda s: s["signature_id"])):
+            X[i, 0] = signature
+            indices[signature["signature_id"]] = i
 
-    labels = clusterer.labels_
+        # Semi-supervised block clustering
+        if args.input_clusters:
+            true_clusters = json.load(open(args.input_clusters, "r"))
+            y_true = -np.ones(len(X), dtype=np.int)
 
-    # Print clusters
-    for cluster in np.unique(labels):
-        entries = set()
+            for label, signature_ids in true_clusters.items():
+                for signature_id in signature_ids:
+                    y_true[indices[signature_id]] = label
 
-        for signature in X[labels == cluster, 0]:
-            entries.add((signature["author_name"],
-                         signature["author_affiliation"]))
+            if args.clustering_test_size is not None:
+                train, test = train_test_split(
+                    np.arange(len(X)),
+                    test_size=args.clustering_test_size,
+                    random_state=args.clustering_random_state)
 
-        print("Cluster #%d = %s" % (cluster, entries))
-    print()
+                y = -np.ones(len(X), dtype=np.int)
+                y[train] = y_true[train]
 
-    # Statistics
-    print("Number of blocks =", len(clusterer.clusterers_))
-    print("True number of clusters", len(np.unique(truth)))
-    print("Number of computed clusters", len(np.unique(labels)))
-    print("Paired F-score (overall) =", paired_f_score(truth, labels))
-    print("Paired F-score (train) =", paired_f_score(truth[train],
-                                                     labels[train]))
-    print("Paired F-score (test) =", paired_f_score(truth[test], labels[test]))
+            else:
+                y = y_true
+
+        else:
+            y = None
+
+        clusterer = BlockClustering(
+            blocking=blocking,
+            base_estimator=ScipyHierarchicalClustering(
+                affinity=affinity,
+                threshold=args.clustering_threshold,
+                method=args.clustering_method,
+                scoring=b3_f_score),
+            verbose=args.verbose,
+            n_jobs=args.n_jobs).fit(X, y)
+
+        labels = clusterer.labels_
+
+        # Save predicted clusters
+        if args.output_clusters:
+            clusters = {}
+
+            for label in np.unique(labels):
+                mask = (labels == label)
+                clusters[label] = [r[0]["signature_id"] for r in X[mask]]
+
+            json.dump(clusters, open(args.output_clusters, "w"))
+
+        # Statistics
+        if args.verbose and args.input_clusters:
+            print("Number of blocks =", len(clusterer.clusterers_))
+            print("True number of clusters", len(np.unique(y_true)))
+            print("Number of computed clusters", len(np.unique(labels)))
+            print("B^3 F-score (overall) =", b3_f_score(y_true, labels))
+
+            if args.clustering_test_size:
+                print("B^3 F-score (train) =",
+                      b3_f_score(y_true[train], labels[train]))
+                print("B^3 F-score (test) =",
+                      b3_f_score(y_true[test], labels[test]))
