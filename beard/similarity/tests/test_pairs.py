@@ -112,7 +112,6 @@ def test_fuzzy_simple():
     thrs = None
     arr = tfidf.toarray()
     X = np.array([[item for sublist in arr for item in sublist]])
-    # X = sp.csr_matrix(X)
 
     # Compute the expected result
     Pre_X1 = np.array(arr[0]).reshape((1, 4))
@@ -134,7 +133,7 @@ def test_fuzzy_simple():
 
     # Produce and compare the values
     preComputed = Xt.reshape((1, 1))
-    toCompare = FuzzySimilarity(vocabulary, sim_f, thrs).fit_transform(X)
+    toCompare = FuzzySimilarity().transform(X, vocabulary, sim_f, thrs)
 
     assert_array_almost_equal(toCompare, preComputed)
 
@@ -187,7 +186,7 @@ def test_fuzzy_complex():
 
     # Produce and compare the values
     preComputed = Xt.reshape((3, 1))
-    toCompare = FuzzySimilarity(vocabulary, sim_f, thrs).fit_transform(X)
+    toCompare = FuzzySimilarity().transform(X, vocabulary, sim_f, thrs)
 
     assert_array_almost_equal(toCompare, preComputed)
 
@@ -236,16 +235,17 @@ def test_fuzzy_threshold():
 
     with np.errstate(divide="ignore"):
         Xt = numerator / denominator
-        Xt[denominator == 0.0] = 0.0
+        Xt[denominator == 0.0] = 0.01
 
     # Produce and compare the values
     preComputed = Xt.reshape((3, 1))
-    toCompare = FuzzySimilarity(vocabulary, sim_f, thrs).fit_transform(X)
+    toCompare = FuzzySimilarity().transform(X, vocabulary, sim_f, thrs)
 
     assert_array_almost_equal(toCompare, preComputed)
 
 
 def test_fuzzy_induction_to_cosine():
+    """ Test fuzzy similarity's ability to induct to cosine similarity."""
     from sklearn.feature_extraction.text import TfidfVectorizer
 
     X = ["Je suis Evangelos",
@@ -257,37 +257,66 @@ def test_fuzzy_induction_to_cosine():
 
     # Set vocabulary
     vocabulary = {k: v for v, k in fit.vocabulary_.items()}
+
     # Set distance function
-    sim_f = _simple_similarity_function
+    def simple_similarity_function(w1, w2):
+        # Returns 0 if strings are not identical, or 1 otherwise
+        if w1 == w2:
+            return 1
+        return 0
+    sim_f = simple_similarity_function
+    
     # Set threshold
     thrs = 1
     # Set array to be transformed
     arr = tfidf.toarray()
     X = np.array([[item for sublist in arr for item in sublist]])
 
-    Y = FuzzySimilarity(vocabulary, sim_f, thrs).fit_transform(X)
+    Y = FuzzySimilarity().transform(X, vocabulary, sim_f, thrs)
     Y_prime = CosineSimilarity().fit_transform(X)
 
     assert_array_almost_equal(Y, Y_prime)
 
 
-def _simple_similarity_function(w1, w2):
-    if w1 == w2:
-        return 1
-    return 0
+def test_fuzzy_sparse_matrix():
+    """Sparse matrix support test for Fuzzy Similarity."""
+    from sklearn.feature_extraction.text import TfidfVectorizer
 
+    X = ["Je suis Evangelos",
+         "Je suis Evangelo"]
 
-def test_find_closest_neighbour():
-    """Test _find_closest_neighbour functionality."""
-    document = ['You', 'are', 'him']
-    word = 'him'
-    vocabulary = {0: 'You', 1: 'are', 2: 'him', 3: 'her'}
-    tfidf = np.array([1, 0.5, 1, 0])
-    fuzzy = FuzzySimilarity(vocabulary, jaro, None)
+    vect = TfidfVectorizer(min_df=1)
+    fit = vect.fit(X)
+    tfidf = vect.fit_transform(X)
 
-    assert fuzzy._find_closest_neighbour(word, tfidf) == (1, 2) 
+    # Set parameters
+    vocabulary = {k: v for v, k in fit.vocabulary_.items()}
+    sim_f = jaro
+    thrs = None
+    arr = tfidf.toarray()
+    X = np.array([[item for sublist in arr for item in sublist]])
+    X = sp.csr_matrix(X)
 
-    word = 'her'
-    res_sim, res_ind = fuzzy._find_closest_neighbour(word, tfidf)
-    assert_almost_equal(res_sim, 0.61111111)
-    assert res_ind == 1
+    # Compute the expected result
+    Pre_X1 = np.array(arr[0]).reshape((1, 4))
+    Pre_X1_closest = np.array([Pre_X1[0, 1], Pre_X1[0, 1],
+                               Pre_X1[0, 2], Pre_X1[0, 3]]).reshape((1, 4))
+    Pre_Similarities = np.array([1, jaro('Evangelos', 'Evangelo'),
+                                 1, 1]).reshape((1, 4))
+
+    numerator = (Pre_X1 * Pre_X1_closest * Pre_Similarities).sum(axis=1)
+    norm1 = (Pre_X1 * Pre_X1).sum(axis=1)
+    norm2 = ((Pre_X1_closest * Pre_Similarities)*
+             (Pre_X1_closest * Pre_Similarities)).sum(axis=1)
+
+    denominator = (norm1 ** 0.5) * (norm2 ** 0.5)
+
+    with np.errstate(divide="ignore"):
+        Xt = numerator / denominator
+        Xt[denominator == 0.0] = 0.0
+
+    # Produce and compare the values
+    preComputed = Xt.reshape((1, 1))
+    toCompare = FuzzySimilarity().transform(X, vocabulary, sim_f, thrs)
+
+    assert_array_almost_equal(toCompare, preComputed)

@@ -280,36 +280,23 @@ class AbsoluteDifference(BaseEstimator, TransformerMixin):
 
 class FuzzySimilarity(TransformerMixin):
 
-    """Implements Fuzzy Similarity (Soft TF-IDF) metric."""
+    """Implements Fuzzy Similarity (Soft TF-IDF) metric.
 
-    def __init__(self, vocabulary, similarity, threshold):
-        """Initialize.
-
-        Parameters
-        ----------
-        :param vocabulary:
-            From word to feature_id or opposite.
-
-        :param similarity:
-            Similarity function which returns a number between 0 and 1.
-
-        :param threshold:
-            Threshold parameter that belongs to R.
-        """
-        self.vocabulary = vocabulary
-        self.similarity = similarity
-        if threshold > 1.0:
-            self.threshold = 1.0
-        elif threshold < 0.0:
-            self.threshold = 0.0
-        else:
-            self.threshold = threshold
+     For each word in document X1 we search for partial matched tockens in
+     document X2. Tokens are considered a partial match if they get a good
+     score using an similarity measure. Good score is considered one
+     that is higher than the value of the threshold variable. After obtaining
+     those partial matches along with their corresponding similarity socores,
+     we compute the Soft TF_IDF measure by computing the dot product of X1, 
+     their partial matches and the similarity scores. Finally we normalize the
+     result and we return a Soft TF-IDF score for each pair of input. 
+    """
 
     def fit(self, X, y=None):
         """Return self."""
         return self
 
-    def transform(self, X):
+    def transform(self, X, vocabulary, similarity, threshold):
         """Compute the fuzzy similarity for all pairs of elements in `X`.
 
         Rows i in `X` are assumed to represent pairs, where
@@ -321,11 +308,21 @@ class FuzzySimilarity(TransformerMixin):
         ----------
         :param X: array-like, shape (n_samples, 2 * n_features)
             Input paired data.
+        
+        :param vocabulary: dict
+            From word to feature_id or opposite.
+
+        :param similarity: function
+            Similarity function which returns a number between 0 and 1.
+
+        :param threshold: float
+            Threshold parameter defines the minimum level of match - similarity
+            we are trying to obtain.
 
         Returns
         -------
-        :returns X_: array-like, shape (n_samples, 2 * n_features_prime)
-            The transformed data.
+        :returns X_: array-like, shape (n_samples, 1)
+            The calculated fuzzy similarity for each pair of data.
         """
         n_samples, n_features_all = X.shape
         n_features = n_features_all // 2
@@ -337,34 +334,56 @@ class FuzzySimilarity(TransformerMixin):
         X1 = X[:, :n_features]
         X2 = X[:, n_features:]
 
-        X1_closest = np.zeros((n_samples, n_features))
-        Similarities = np.zeros((n_samples, n_features))
+        X1_closest = sp.csr_matrix((n_samples, n_features))
+        similarities = sp.csr_matrix((n_samples, n_features))
 
-        # for each document in X1
-        for row, u in enumerate(X1):
-            # for each word in document u
+        for row, u in enumerate(X1): 
+            # print '********ROW********** %d' % row
+            if sparse:
+                u = u.toarray()[0]
             for pos, w in enumerate(u):
-                w_word = self.vocabulary[pos]
+                # print '********WORD******** %f' % w
+                w_word = vocabulary[pos]
+                
                 if sparse:
-                    # TODO
-                    temp = X2.getrow(row).toarray()
-                    max_sim, n_index = self._find_closest_neighbour(w_word, temp)
+                    words = X2.getrow(row).toarray()[0]
+                    # print words
                 else:
-                    max_sim, n_index = self._find_closest_neighbour(w_word,
-                                                                X2[row, :])
-                X1_closest[row, pos] = X2[row, n_index]
-                Similarities[row, pos] = max_sim
+                    words = X2[row, :]
+                    # print words
+                # Find the closest neighbour
+                positive_tuples = filter(lambda (i, x): x > 0.0, enumerate(words))
+                words_indices = map(lambda (i, v): (i, vocabulary[i]),
+                            positive_tuples)
+                index_distances = map(lambda (i, x): (i, similarity(w_word, x)),
+                              words_indices)
+                n_index, max_sim = max(index_distances,
+                                    key=operator.itemgetter(1))
 
-        if sparse:
-            numerator = np.asarray(X1.multiply(X2).sum(axis=1)).ravel()
-            norm1 = np.asarray(X1.multiply(X1).sum(axis=1)).ravel()
-            norm2 = np.asarray(X2.multiply(X2).sum(axis=1)).ravel()
+                # Fill in the corresponding arrays
+                if threshold is None or max_sim >= threshold:
+                    X1_closest[row, pos] = X2[row, n_index]
+                    similarities[row, pos] = max_sim
+                else:
+                    X1_closest[row, pos] = X2[row, n_index]
+                    similarities[row, pos] = 0
 
-        else:
-            numerator = (X1 * X1_closest * Similarities).sum(axis=1)
-            norm1 = (X1 * X1).sum(axis=1)
-            norm2 = ((X1_closest * Similarities)*
-                     (X1_closest * Similarities)).sum(axis=1)
+        if not sparse:
+            X1 = sp.csr_matrix(X1)
+        # if sparse:            
+        temp = X1_closest.multiply(similarities)
+        numerator = np.asarray(X1.multiply(temp).sum(axis=1)).ravel()
+        norm1 = np.asarray(X1.multiply(X1).sum(axis=1)).ravel()
+        norm2 = np.asarray(temp.multiply(temp).sum(axis=1)).ravel()
+
+        # else:
+        #     X1_closest = np.array(X1_closest.todense())
+        #     similarities = np.array(similarities.todense())
+
+        #     numerator = (X1 * X1_closest * similarities).sum(axis=1)
+        #     norm1 = (X1 * X1).sum(axis=1)
+        #     norm2 = ((X1_closest * similarities)*
+        #              (X1_closest * similarities)).sum(axis=1)
 
         denominator = (norm1 ** 0.5) * (norm2 ** 0.5)
 
@@ -372,28 +391,6 @@ class FuzzySimilarity(TransformerMixin):
             Xt = numerator / denominator
             Xt[denominator == 0.0] = 0.0
 
-        return Xt.reshape((n_samples, 1))
+        print type(Xt)
 
-        
-
-    def _find_closest_neighbour(self, u, words):
-        """Find the word in words with the maximized similarity with u.
-
-        If threshold is 'None', return the maximum similarity between u
-        and one of the words contained in 'words'.
-        """
-        positive_tuples = filter(lambda (i, x): x > 0.0, enumerate(words))
-        words_indices = map(lambda (i, v): (i, self.vocabulary[i]),
-                            positive_tuples)
-        index_distances = map(lambda (i, x): (i, self.similarity(u, x)),
-                              words_indices)
-        max_index, similarity = max(index_distances,
-                                    key=operator.itemgetter(1))
-        
-        if self.threshold is None:
-            return similarity, max_index
-        
-        if similarity >= self.threshold:
-            return similarity, max_index
-        else:
-            return 0, -1
+        return Xt.reshape((n_samples, 1))        
