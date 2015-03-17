@@ -12,7 +12,7 @@
 from .pairs import PairTransformer
 from .pairs import CosineSimilarity
 from .pairs import AbsoluteDifference
-from .fuzzy import FuzzySimilarity
+from .pairs import FuzzySimilarity
 
 __all__ = ("PairTransformer",
            "CosineSimilarity",
