@@ -24,6 +24,7 @@ from sklearn.preprocessing import StandardScaler
 from ..pairs import PairTransformer
 from ..pairs import CosineSimilarity
 from ..pairs import AbsoluteDifference
+from ..pairs import JaccardSimilarity
 from ...utils import FuncTransformer
 
 
@@ -87,3 +88,29 @@ def test_absolute_difference():
 
     Xt = AbsoluteDifference().fit_transform(sp.csr_matrix(X))
     assert_array_almost_equal(Xt, [[0, 0], [1, 1], [0, 0], [1, 1]])
+
+
+def test_JaccardSimilarity():
+    """Test for JaccardSimilarity."""
+    X = np.array([[0, 0, 0, 0, 0, 0, 0, 0],
+                  [0, 0, 1, 1, 0, 1, 0, 1],
+                  [0, 1, 0, 1, 0, 0, 1, 0],
+                  [1, 0, 1, 1, 1, 1, 0, 7],
+                  [0, 3, 0, 1, 0, 9, 0, 1]])
+
+    Xt = JaccardSimilarity().fit_transform(X)
+    assert_array_almost_equal(Xt, [[0.], [0.33333333], [0.], [0.5], [1.]])
+
+    Xt = JaccardSimilarity().fit_transform(sp.csr_matrix(X))
+    assert_array_almost_equal(Xt, [[0.], [0.33333333], [0.], [0.5], [1.]])
+
+    X = np.array([[0, 0, 0, 0, 0, 0, 0, 0],
+                  [0, 0, 0, 0, 0, 0, 0, 0],
+                  [0, 0, 0, 0, 0, 0, 0, 0],
+                  [0, 0, 0, 0, 0, 0, 0, 0]])
+
+    Xt = JaccardSimilarity().fit_transform(X)
+    assert_array_almost_equal(Xt, [[0.], [0.], [0.], [0.]])
+
+    Xt = JaccardSimilarity().fit_transform(sp.csr_matrix(X))
+    assert_array_almost_equal(Xt, [[0.], [0.], [0.], [0.]])
