@@ -10,6 +10,7 @@
 """Transformers for paired data.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. codeauthor:: Evangelos Tzemis <evangelos.tzemis@cern.ch>
 
 """
 import numpy as np
@@ -17,6 +18,8 @@ import scipy.sparse as sp
 
 from sklearn.base import BaseEstimator
 from sklearn.base import TransformerMixin
+
+import operator
 
 
 class PairTransformer(BaseEstimator, TransformerMixin):
@@ -273,3 +276,100 @@ class AbsoluteDifference(BaseEstimator, TransformerMixin):
         X2 = X[:, n_features:]
 
         return np.abs(X1 - X2)
+
+
+class FuzzySimilarity(TransformerMixin):
+
+    """Implements Fuzzy Similarity (Soft TF-IDF) metric.
+
+    For each word in document X1 we search for partial matched tockens in
+    document X2. Tokens are considered a partial match if they get a good
+    score using an similarity measure. Good score is considered one being
+    higher than the value of the threshold variable. After obtaining
+    those partial matches along with their corresponding similarity scores,
+    we compute the Soft TF_IDF measure by computing the dot product of X1,
+    their partial matches and the similarity scores. Finally we normalize the
+    result and we return a Soft TF-IDF score for each pair of input.
+    """
+
+    def fit(self, X, y=None):
+        """Return self."""
+        return self
+
+    def transform(self, X, vocabulary, similarity, threshold):
+        """Compute the fuzzy similarity for all pairs of elements in `X`.
+
+        Rows i in `X` are assumed to represent pairs, where
+        `X[i, :n_features]` and `X[i, n_features:]` correspond to their two
+        individual elements. Calling `transform` computes the fuzzy similarity
+        between these elements.
+
+        Parameters
+        ----------
+        :param X: array-like, shape (n_samples, 2 * n_features)
+            Input paired data.
+
+        :param vocabulary: dict
+            From word to feature_id or opposite.
+
+        :param similarity: function
+            Similarity function which returns a number between 0 and 1.
+
+        :param threshold: float
+            Threshold parameter defines the minimum level of match - similarity
+            we are trying to obtain.
+
+        Returns
+        -------
+        :returns X_: array-like, shape (n_samples, 1)
+            The calculated fuzzy similarity for each pair of data.
+        """
+        n_samples, n_features_all = X.shape
+        n_features = n_features_all // 2
+        sparse = sp.issparse(X)
+
+        if sparse and not sp.isspmatrix_csr(X):
+            X = X.tocsr()
+
+        X1 = X[:, :n_features]
+        X2 = X[:, n_features:]
+
+        X1_closest = sp.csr_matrix((n_samples, n_features))
+        similarities = sp.csr_matrix((n_samples, n_features))
+
+        for row, u in enumerate(X1):
+            if sparse:
+                u = u.toarray()[0]
+            for pos, w in enumerate(u):
+                w_word = vocabulary[pos]
+                if sparse:
+                    words = X2.getrow(row).toarray()[0]
+                else:
+                    words = X2[row, :]
+                # Find the closest neighbour
+                pos_tupl = filter(lambda t: t[1] > 0.0, enumerate(words))
+                w_i = map(lambda t: (t[0], vocabulary[t[0]]), pos_tupl)
+                ind_dis = map(lambda t: (t[0], similarity(w_word, t[1])), w_i)
+                n_index, max_sim = max(ind_dis, key=operator.itemgetter(1))
+
+                # Fill in the corresponding arrays according to threshold
+                if threshold is None or max_sim >= threshold:
+                    X1_closest[row, pos] = X2[row, n_index]
+                    similarities[row, pos] = max_sim
+                else:
+                    X1_closest[row, pos] = X2[row, n_index]
+                    similarities[row, pos] = 0
+
+        if not sparse:
+            X1 = sp.csr_matrix(X1)
+        temp = X1_closest.multiply(similarities)
+        numerator = np.asarray(X1.multiply(temp).sum(axis=1)).ravel()
+        norm1 = np.asarray(X1.multiply(X1).sum(axis=1)).ravel()
+        norm2 = np.asarray(temp.multiply(temp).sum(axis=1)).ravel()
+
+        denominator = (norm1 ** 0.5) * (norm2 ** 0.5)
+        with np.errstate(divide="ignore"):
+            Xt = numerator / denominator
+            Xt[denominator == 0.0] = 0.0
+
+        return Xt.reshape((n_samples, 1))
