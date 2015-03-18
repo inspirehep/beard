@@ -117,7 +117,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
         self.n_jobs = n_jobs
 
     def _validate(self, X, blocks):
-        """Validate hyper-parameters and input data. """
+        """Validate hyper-parameters and input data."""
         if self.blocking == "single":
             blocks = _single(X)
         elif self.blocking == "precomputed":
