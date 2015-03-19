@@ -10,6 +10,7 @@
 """Test of clustering wrappers.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. codeauthor:: Hussein AL-NATSHEH <h.natsheh@ciapple.com>
 
 """
 from __future__ import division
@@ -24,12 +25,19 @@ from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.utils import check_random_state
 
 from ..wrappers import ScipyHierarchicalClustering
+from beard.metrics import silhouette
 
 
 def test_scipy_hierarchical_clustering():
     """Test wrapper of Scipy hierarchical clustering."""
     random_state = check_random_state(42)
     X, y = make_blobs(centers=4, shuffle=False, random_state=random_state)
+
+    # Unsupervised clustering
+    clusterer = ScipyHierarchicalClustering(affinity=euclidean_distances,
+                                            scoring=silhouette)
+    labels = clusterer.fit_predict(X)
+    assert_array_equal([25, 25, 25, 25], np.bincount(labels))
 
     # Default parameters, using euclidean distance
     clusterer = ScipyHierarchicalClustering(n_clusters=4)

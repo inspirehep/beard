@@ -11,6 +11,7 @@
 
 .. codeauthor:: Evangelos Tzemis <evangelos.tzemis@cern.ch>
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. codeauthor:: Hussein AL-NATSHEH <h.natsheh@ciapple.com>
 
 """
 from __future__ import division
@@ -20,6 +21,34 @@ from operator import mul
 from itertools import groupby
 
 from sklearn.metrics.cluster.supervised import check_clusterings
+from sklearn.metrics import silhouette_score
+
+
+def silhouette(X, labels, metric='precomputed'):
+    """Compute silhouette_score of a clustering result.
+
+    Parameters
+    ----------
+    :param X: array [n_samples_a, n_samples_a] if metric == 'precomputed', or,
+        [n_samples_a, n_features] otherwise Array of pairwise distances between
+        samples, or a feature array.
+
+    Returns
+    -------
+    :return float: Mean Silhouette Coefficient for all samples.
+
+    Reference
+    ---------
+    http://scikit-learn.org/stable/modules/generated/
+    sklearn.metrics.silhouette_score.html.
+    """
+    # Check that input given is not the empty set
+    if X.shape[0] != X.shape[1]:
+        raise ValueError(
+            "input X must be a squared array [n_samples, n_samples].")
+
+    # Compute silhouette_score
+    return silhouette_score(X, labels, metric=metric)
 
 
 def b3_precision_recall_fscore(labels_true, labels_pred):
