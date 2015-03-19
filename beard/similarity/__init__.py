@@ -12,7 +12,9 @@
 from .pairs import PairTransformer
 from .pairs import CosineSimilarity
 from .pairs import AbsoluteDifference
+from .pairs import JaccardSimilarity
 
 __all__ = ("PairTransformer",
            "CosineSimilarity",
-           "AbsoluteDifference")
+           "AbsoluteDifference",
+           "JaccardSimilarity")

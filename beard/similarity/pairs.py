@@ -12,11 +12,14 @@
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
 
 """
+from __future__ import division
+
 import numpy as np
 import scipy.sparse as sp
 
 from sklearn.base import BaseEstimator
 from sklearn.base import TransformerMixin
+from sklearn.preprocessing import binarize
 
 
 class PairTransformer(BaseEstimator, TransformerMixin):
@@ -273,3 +276,87 @@ class AbsoluteDifference(BaseEstimator, TransformerMixin):
         X2 = X[:, n_features:]
 
         return np.abs(X1 - X2)
+
+
+class JaccardSimilarity(BaseEstimator, TransformerMixin):
+
+    """Jaccard similarity on paired data.
+
+    The Jaccard similarity of two elements in a pair is defined as the
+    ratio between the size of their intersection and the size of their
+    union.
+    """
+
+    def fit(self, X, y=None):
+        """(Do nothing).
+
+        Parameters
+        ----------
+        :param X: array-like, shape (n_samples, n_features)
+            Input data.
+
+        Returns
+        -------
+        :returns: self
+        """
+        return self
+
+    def transform(self, X):
+        """Compute the Jaccard similarity for all pairs of elements in ``X``.
+
+        Rows i in ``X`` are assumed to represent pairs, where
+        ``X[i, :n_features]`` and ``X[i, n_features:]`` correspond to their two
+        individual elements, each representing a set. Calling ``transform``
+        computes the Jaccard similarity between these sets, i.e. such that
+        ``Xt[i]`` is the Jaccard similarity of ``X[i, :n_features]`` and
+        ``X[i, n_features:]``.
+
+        Parameters
+        ----------
+        :param X: array-like, shape (n_samples, n_features)
+            Input data.
+
+        Returns
+        -------
+        :returns: Xt array-like, shape (n_samples, 1)
+            The transformed data.
+        """
+        n_samples, n_features_all = X.shape
+        n_features = n_features_all // 2
+
+        X = binarize(X)
+        X1 = X[:, :n_features]
+        X2 = X[:, n_features:]
+
+        sparse = sp.issparse(X)
+
+        if sparse and not sp.isspmatrix_csr(X):
+            X = X.tocsr()
+
+        if sparse:
+            if X.data.sum() == 0:
+                return np.zeros((n_samples, 1))
+
+            numerator = np.asarray(X1.multiply(X2).sum(axis=1)).ravel()
+
+            X_sum = X1 + X2
+            X_sum.data[X_sum.data != 0.] = 1
+            M = X_sum.sum(axis=1)
+            A = M.getA()
+            denominator = A.reshape(-1,)
+
+        else:
+            if len(X[X.nonzero()]) == 0.:
+                return np.zeros((n_samples, 1))
+
+            numerator = (X1 * X2).sum(axis=1)
+
+            X_sum = X1 + X2
+            X_sum[X_sum.nonzero()] = 1
+            denominator = X_sum.sum(axis=1)
+
+        with np.errstate(divide="ignore"):
+            Xt = numerator / denominator
+            Xt[np.where(denominator == 0)[0]] = 0.
+
+        return np.array(Xt).reshape(-1, 1)
