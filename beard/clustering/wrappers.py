@@ -10,6 +10,7 @@
 """Scikit-Learn compatible wrappers of clustering algorithms.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. codeauthor:: Hussein AL-NATSHEH <h.natsheh@ciapple.com>
 
 """
 import numpy as np
@@ -19,7 +20,11 @@ import scipy.cluster.hierarchy as hac
 from sklearn.base import BaseEstimator
 from sklearn.base import ClusterMixin
 
+from sklearn.metrics.pairwise import euclidean_distances
+
 from beard.metrics import paired_f_score
+from beard.metrics import b3_f_score
+from beard.metrics import silhouette
 
 
 class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
@@ -35,9 +40,9 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         The linkage matrix.
     """
 
-    def __init__(self, method="single", affinity="euclidean", threshold=None,
-                 n_clusters=1, criterion="distance", depth=2, R=None,
-                 monocrit=None, scoring=paired_f_score):
+    def __init__(self, method="single", affinity="euclidean",
+                 threshold=None, n_clusters=1, criterion="distance",
+                 depth=2, R=None, monocrit=None, scoring=b3_f_score):
         """Initialize.
 
         Parameters
@@ -80,8 +85,9 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
             See scipy.cluster.hierarchy.fcluster for further details.
 
         :param scoring: callable
-            The scoring function to maximize in (semi-)supervised clustering
-            (when y!=None).
+            The scoring function to maximize in either (semi-)supervised
+            clustering if y is not None, or unsupervised otherwise (using
+            "silhouette" score as an example when y is None)
         """
         self.method = method
         self.affinity = affinity
@@ -121,22 +127,19 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
 
         elif callable(self.affinity):
             X = self.affinity(X)
+            Xs = X  # to be used in silhouette case
             i, j = np.triu_indices(X.shape[0], k=1)
             X = X[i, j]
             self.linkage_ = hac.linkage(X, method=self.method)
-
         else:
             self.linkage_ = hac.linkage(X,
                                         method=self.method,
                                         metric=self.affinity)
 
-        # Adjust threshold if y is provided
-        if y is not None:
-            train = (y != -1)
+        # Estimate threshold in case of semi-supervised or unsupervised
+        estimate_thresh = self.scoring == silhouette or y is not None
 
-            if train.sum() == 0:
-                return self
-
+        if self.threshold is None and estimate_thresh:
             best_threshold = self.linkage_[-1, 2]
             best_score = -np.inf
 
@@ -152,9 +155,22 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
                                       depth=self.depth, R=self.R,
                                       monocrit=self.monocrit)
 
-                score = self.scoring(y[train], labels[train])
+                if self.scoring == silhouette and y is None:
+                    n_labels = len(np.unique(labels))
+                    n_samples = Xs.shape[0]
 
-                if score >= best_score:
+                    if 1 < n_labels < n_samples:
+                        score = self.scoring(Xs, labels, metric="precomputed")
+                    else:
+                        score = -np.inf
+
+                if y is not None:
+                    train = (y != -1)
+                    if train.sum() == 0:
+                        return self
+                    score = self.scoring(y[train], labels[train])
+
+                if score > best_score:
                     best_score = score
                     best_threshold = threshold
 
@@ -171,7 +187,8 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         """
         threshold = self.threshold
 
-        if hasattr(self, "best_threshold_"):  # Overide default threshold
+        # Overide default threshold with the estimated one
+        if hasattr(self, "best_threshold_") and threshold is None:
             threshold = self.best_threshold_
 
         if threshold is not None:

@@ -10,6 +10,7 @@
 """Tests of transformers for paired data.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. codeauthor:: Hussein AL-NATSHEh <h.natsheh@ciapple.com>
 
 """
 
