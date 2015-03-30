@@ -10,11 +10,14 @@
 """Helper functions for strings.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. codeauthor:: Mateusz Susik <mateusz.susik@cern.ch>
 
 """
 
 import sys
 import unicodedata
+
+from unidecode import unidecode
 
 from .misc import memoize
 
@@ -27,7 +30,7 @@ def asciify(string):
     if not IS_PYTHON_3 and not isinstance(string, unicode):
         string = unicode(string, "utf8", errors="ignore")
 
-    string = unicodedata.normalize("NFKD", string)
+    string = unidecode(unicodedata.normalize("NFKD", string))
     string = string.encode("ascii", "ignore")
     string = string.decode("utf8")
 
