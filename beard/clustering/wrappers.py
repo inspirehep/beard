@@ -10,6 +10,7 @@
 """Scikit-Learn compatible wrappers of clustering algorithms.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. codeauthor:: Hussein AL-NATSHEH <h.natsheh@ciapple.com>
 
 """
 import numpy as np
@@ -18,8 +19,6 @@ import scipy.cluster.hierarchy as hac
 
 from sklearn.base import BaseEstimator
 from sklearn.base import ClusterMixin
-
-from beard.metrics import paired_f_score
 
 
 class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
@@ -35,9 +34,10 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         The linkage matrix.
     """
 
-    def __init__(self, method="single", affinity="euclidean", threshold=None,
-                 n_clusters=1, criterion="distance", depth=2, R=None,
-                 monocrit=None, scoring=paired_f_score):
+    def __init__(self, method="single", affinity="euclidean",
+                 threshold=None, n_clusters=None, criterion="distance",
+                 depth=2, R=None, monocrit=None, scoring=None,
+                 affinity_score=False):
         """Initialize.
 
         Parameters
@@ -55,7 +55,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
 
         :param threshold: float or None
             The thresold to apply when forming flat clusters. In case
-            of semi-supervised clustering, this value is overriden by
+            of semi-supervised clustering, this value is overridden by
             the threshold maximizing the provided scoring function on
             the labeled samples.
             See scipy.cluster.hierarchy.fcluster for further details.
@@ -80,8 +80,16 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
             See scipy.cluster.hierarchy.fcluster for further details.
 
         :param scoring: callable
-            The scoring function to maximize in (semi-)supervised clustering
-            (when y!=None).
+            The scoring function to maximize in order to estimate the best
+            threshold. There are 4 possibles cases based on data availability:
+            - ground_truth and affinity: scoring(X, labels_true, labels_pred)
+            - ground_truth but bot affinity: scoring(labels_true, labels_pred)
+            - affinity but not ground_truth: scoring(X, labels_pred)
+            - none: scoring(labels_pred).
+
+        :param affinity_score: boolean
+            A flag that must be True if the scoring function requires the
+            affinity as an input. False otherwise.
         """
         self.method = method
         self.affinity = affinity
@@ -92,6 +100,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         self.R = R
         self.monocrit = monocrit
         self.scoring = scoring
+        self.affinity_score = affinity_score
 
     def fit(self, X, y=None):
         """Perform hierarchical clustering on input data.
@@ -112,34 +121,42 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         :returns: self
         """
         X = np.array(X)
+        size = X.shape[0]
 
         # Build linkage matrix
         if self.affinity == "precomputed":
+            Xs = X
             i, j = np.triu_indices(X.shape[0], k=1)
             X = X[i, j]
             self.linkage_ = hac.linkage(X, method=self.method)
 
         elif callable(self.affinity):
             X = self.affinity(X)
+            Xs = X
             i, j = np.triu_indices(X.shape[0], k=1)
             X = X[i, j]
             self.linkage_ = hac.linkage(X, method=self.method)
-
         else:
             self.linkage_ = hac.linkage(X,
                                         method=self.method,
                                         metric=self.affinity)
 
-        # Adjust threshold if y is provided
+        # Estimate threshold in case of semi-supervised or unsupervised.
+        # As default value we use the highest so we obtain only 1 cluster.
+        best_threshold = self.linkage_[-1, 2]
+
         if y is not None:
-            train = (y != -1)
+            y_arr = np.array(y)
+            all_y_neg = y_arr.sum() == len(y_arr) * -1
+            ground_truth = y is not None and not all_y_neg
+        else:
+            ground_truth = False
 
-            if train.sum() == 0:
-                return self
-
-            best_threshold = self.linkage_[-1, 2]
+        n_clusters = self.n_clusters
+        scoring = self.scoring
+        threshold = self.threshold
+        if threshold is None and n_clusters is None and scoring is not None:
             best_score = -np.inf
-
             thresholds = np.concatenate(([0],
                                          self.linkage_[:, 2],
                                          [self.linkage_[-1, 2]]))
@@ -151,14 +168,31 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
                                       criterion=self.criterion,
                                       depth=self.depth, R=self.R,
                                       monocrit=self.monocrit)
+                if ground_truth:
+                    train = (y != -1)
 
-                score = self.scoring(y[train], labels[train])
+                    if not self.affinity_score:
+                        score = scoring(y[train], labels[train])
+                    else:
+                        score = scoring(Xs, y[train], labels[train])
+
+                elif self.affinity_score:
+                    n_labels = len(np.unique(labels))
+                    n_samples = Xs.shape[0]
+
+                    if 1 < n_labels < n_samples:
+                        score = scoring(Xs, labels)
+                    else:
+                        score = -np.inf
+                else:
+                    score = scoring(labels)
 
                 if score >= best_score:
                     best_score = score
                     best_threshold = threshold
 
-            self.best_threshold_ = best_threshold
+        self.best_threshold_ = best_threshold
+        self.size_ = size
 
         return self
 
@@ -169,9 +203,33 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         Note that labels are computed on-the-fly from the linkage matrix,
         based on the value of self.threshold or self.n_clusters.
         """
+        n_clusters = self.n_clusters
+
+        if n_clusters is not None:
+
+            if n_clusters < 1 or n_clusters > self.size_:
+                raise ValueError("n_clusters n must be n_samples > n > 1.")
+            else:
+                thresholds = np.concatenate(([0],
+                                            self.linkage_[:, 2],
+                                            [self.linkage_[-1, 2]]))
+
+                for i in range(len(thresholds) - 1):
+                    t1, t2 = thresholds[i:i + 2]
+                    threshold = (t1 + t2) / 2.0
+                    labels = hac.fcluster(self.linkage_, threshold,
+                                          criterion=self.criterion,
+                                          depth=self.depth, R=self.R,
+                                          monocrit=self.monocrit)
+
+                    if len(np.unique(labels)) == n_clusters:
+                        _, labels = np.unique(labels, return_inverse=True)
+                        return labels
+
         threshold = self.threshold
 
-        if hasattr(self, "best_threshold_"):  # Overide default threshold
+        # Override threshold with the estimated one if it is None
+        if threshold is None:
             threshold = self.best_threshold_
 
         if threshold is not None:
@@ -183,21 +241,4 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
             return labels
 
         else:
-            thresholds = np.concatenate(([0],
-                                         self.linkage_[:, 2],
-                                         [self.linkage_[-1, 2]]))
-
-            for i in range(len(thresholds) - 1):
-                t1, t2 = thresholds[i:i + 2]
-                threshold = (t1 + t2) / 2.0
-                labels = hac.fcluster(self.linkage_, threshold,
-                                      criterion=self.criterion,
-                                      depth=self.depth, R=self.R,
-                                      monocrit=self.monocrit)
-
-                if len(np.unique(labels)) == self.n_clusters:
-                    _, labels = np.unique(labels, return_inverse=True)
-                    return labels
-
-            raise ValueError("Failed to group samples into n_clusters=%d"
-                             % self.n_clusters)
+            raise ValueError("Clustering error. Check the inputs combination.")
