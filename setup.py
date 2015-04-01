@@ -80,10 +80,11 @@ _keywords = [
 ]
 
 _install_requires = [
-    "scipy>=0.14",
     "joblib>=0.8.4",
     "numpy>=1.9",
-    "scikit-learn>=0.15.2"
+    "scikit-learn>=0.15.2",
+    "scipy>=0.14",
+    "unidecode"
 ]
 
 _tests_require = [
