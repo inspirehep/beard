@@ -83,7 +83,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
             The scoring function to maximize in order to estimate the best
             threshold. There are 4 possibles cases based on data availability:
             - ground_truth and affinity: scoring(X, labels_true, labels_pred)
-            - ground_truth but bot affinity: scoring(labels_true, labels_pred)
+            - ground_truth but not affinity: scoring(labels_true, labels_pred)
             - affinity but not ground_truth: scoring(X, labels_pred)
             - none: scoring(labels_pred).
 
@@ -208,7 +208,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         if n_clusters is not None:
 
             if n_clusters < 1 or n_clusters > self.size_:
-                raise ValueError("n_clusters n must be n_samples > n > 1.")
+                raise ValueError("n_clusters must be within [1; n_samples].")
             else:
                 thresholds = np.concatenate(([0],
                                             self.linkage_[:, 2],
