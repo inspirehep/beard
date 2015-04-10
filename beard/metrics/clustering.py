@@ -11,6 +11,7 @@
 
 .. codeauthor:: Evangelos Tzemis <evangelos.tzemis@cern.ch>
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. codeauthor:: Hussein AL-NATSHEH <h.natsheh@ciapple@com>
 
 """
 from __future__ import division
@@ -19,7 +20,43 @@ import numpy as np
 from operator import mul
 from itertools import groupby
 
+from sklearn.metrics import silhouette_score as sklearn_silhouette_score
 from sklearn.metrics.cluster.supervised import check_clusterings
+
+
+def silhouette_score(X, labels, metric="precomputed"):
+    """Compute silhouette_score with an extension of number of clusters condition.
+
+    The condition is that Silhouette Coefficent is only defined if number of
+    clusters is 1 < n_clusters < n_samples. What the extension does here is
+    simply accepts n_clusters out of that boundary and returns the minimum
+    possible score for such cases.
+
+    Parameters:
+    -----------
+    :param X : array [n_samples_a, n_samples_a] if metric == 'precomputed', or,
+    [n_samples_a, n_features] otherwise
+        Array of pairwise distances between samples, or a feature array.
+    :param labels : array, shape = [n_samples]
+        Predicted labels for each sample.
+    :param metric : string, or callable
+        The metric to use when calculating distance between instances in a
+        feature array. If metric is a string, it must be one of the options
+        allowed by metrics.pairwise.pairwise_distances. If X is the distance
+        array itself, use metric="precomputed".
+
+    Returns:
+    --------
+    :return float silhouette: mean Silhouette Coefficient for all samples or
+        -1.0 if the number of clusters is out of default boundary
+        (1 < n_clusters < n_samples)
+    """
+    n_samples = X.shape[0]
+    n_clusters = len(np.unique(labels))
+    if 1 < n_clusters < n_samples:
+        return sklearn_silhouette_score(X, labels, metric)
+    else:
+        return -1.0
 
 
 def b3_precision_recall_fscore(labels_true, labels_pred):
