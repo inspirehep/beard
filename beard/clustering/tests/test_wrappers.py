@@ -10,11 +10,12 @@
 """Test of clustering wrappers.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
-.. codeauthor:: Hussein AL-NATSHEH <h.natsheh@ciapple.com>
+.. codeauthor:: Hussein Al-Natsheh<h.natsheh@ciapple.com>
 
 """
 from __future__ import division
 
+from functools import partial
 import numpy as np
 from numpy.testing import assert_equal
 from numpy.testing import assert_array_equal
@@ -24,94 +25,202 @@ from sklearn.datasets import make_blobs
 from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.utils import check_random_state
 
-from ..wrappers import ScipyHierarchicalClustering
 from beard.metrics import b3_f_score
-
-from sklearn.metrics import silhouette_score
-from functools import partial
-
-
-# Test wrapper of Scipy hierarchical clustering
-
-@pytest.fixture
-def testData():
-    """Preparing a test data."""
-    random_state = check_random_state(42)
-
-    return make_blobs(centers=4, shuffle=False, random_state=random_state)
+from beard.metrics import silhouette_score
+from beard.clustering import ScipyHierarchicalClustering
 
 
-def test_unsupervised(testData):
-    """Unsupervised clustering."""
-    X, y = testData
-    scoring = partial(silhouette_score, metric="precomputed")
+def generate_data(supervised=False, affinity=False):
+    rng = check_random_state(42)
+    X, y = make_blobs(centers=4, shuffle=False, random_state=rng)
+
+    if affinity:
+        d = euclidean_distances(X)
+        d = (d + d.T) / 2.0
+        d /= d.max()
+        X = d
+
+    if supervised:
+        mask = rng.randint(2, size=len(y)).astype(np.bool)
+        y[mask] = -1
+
+    else:
+        y[:] = -1
+
+    return X, y
+
+
+def test_shc_semi_supervised_scoring_data_raw():
+    """Test semi-supervised learning for SHC when scoring_data='raw'."""
+    X, y = generate_data(supervised=True, affinity=False)
+
+    def _scoring(X_raw, labels_true, labels_pred):
+        assert X_raw.shape == X.shape
+        score = b3_f_score(labels_true, labels_pred)
+        return score
+
+    clusterer = ScipyHierarchicalClustering(scoring=_scoring,
+                                            scoring_data="raw")
+    clusterer.fit(X, y)
+    labels = clusterer.labels_
+    assert_array_equal([25, 25, 25, 25], np.bincount(labels))
+
+
+def test_shc_semi_supervised_scoring_data_affinity():
+    """Test semi-supervised learning for SHC when scoring_data='affinity'."""
+    # Passing feature matrix
+    X1, y1 = generate_data(supervised=True, affinity=False)
+
+    def _scoring1(X_affinity, labels_true, labels_pred):
+        assert X_affinity.shape[0] == X_affinity.shape[1]
+        assert X_affinity.shape != X1.shape
+        score = b3_f_score(labels_true, labels_pred)
+        return score
+
+    clusterer = ScipyHierarchicalClustering(scoring=_scoring1,
+                                            scoring_data="affinity",
+                                            affinity=euclidean_distances)
+    clusterer.fit(X1, y1)
+    labels = clusterer.labels_
+    assert_array_equal([25, 25, 25, 25], np.bincount(labels))
+
+    # Passing affinity matrix
+    X2, y2 = generate_data(supervised=True, affinity=True)
+
+    def _scoring2(X_affinity, labels_true, labels_pred):
+        assert X_affinity.shape[0] == X_affinity.shape[1]
+        assert X_affinity.shape == X2.shape
+        score = b3_f_score(labels_true, labels_pred)
+        return score
+
+    clusterer = ScipyHierarchicalClustering(scoring=_scoring2,
+                                            scoring_data="affinity",
+                                            affinity="precomputed")
+    clusterer.fit(X2, y2)
+    labels = clusterer.labels_
+    assert_array_equal([25, 25, 25, 25], np.bincount(labels))
+
+
+def test_shc_semi_supervised_scoring_data_none():
+    """Test semi-supervised learning for SHC when scoring_data is None."""
+    X, y = generate_data(supervised=True, affinity=False)
+
+    def _scoring(labels_true, labels_pred):
+        score = b3_f_score(labels_true, labels_pred)
+        return score
+
+    # We should find all 4 clusters
+    clusterer = ScipyHierarchicalClustering(scoring=_scoring)
+    clusterer.fit(X, y)
+    labels = clusterer.labels_
+    assert_array_equal([25, 25, 25, 25], np.bincount(labels))
+
+
+def test_shc_unsupervised_scoring_data_raw():
+    """Test unsupervised clustering for SHC when scoring_data='raw'."""
+    X, _ = generate_data(supervised=False, affinity=False)
+    _scoring = partial(silhouette_score, metric="euclidean")
     clusterer = ScipyHierarchicalClustering(affinity=euclidean_distances,
-                                            scoring=scoring,
-                                            affinity_score=True)
+                                            scoring=_scoring,
+                                            scoring_data="raw")
     labels = clusterer.fit_predict(X)
     assert_array_equal([25, 25, 25, 25], np.bincount(labels))
 
 
-def test_scipy_hierarchical_clustering_default_euclidean(testData):
-    """Default parameters, using euclidean distance."""
-    X, y = testData
+def test_shc_unsupervised_scoring_data_affinity():
+    """Test unsupervised clustering for SHC when scoring_data='affinity'."""
+    # Passing feature matrix
+    X, _ = generate_data(supervised=False, affinity=False)
+    _scoring = partial(silhouette_score, metric="precomputed")
+    clusterer = ScipyHierarchicalClustering(affinity=euclidean_distances,
+                                            scoring=_scoring,
+                                            scoring_data="affinity")
+    labels = clusterer.fit_predict(X)
+    assert_array_equal([25, 25, 25, 25], np.bincount(labels))
+
+    # Passing affinity matrix
+    X, _ = generate_data(supervised=False, affinity=True)
+    _scoring = partial(silhouette_score, metric="precomputed")
+    clusterer = ScipyHierarchicalClustering(affinity="precomputed",
+                                            scoring=_scoring,
+                                            scoring_data="affinity")
+    labels = clusterer.fit_predict(X)
+    assert_array_equal([25, 25, 25, 25], np.bincount(labels))
+
+
+def test_shc_unsupervised_scoring_data_None():
+    """Test unsupervised clustering for SHC when scoring_data is None."""
+    X, _ = generate_data(supervised=False, affinity=False)
+
+    def _scoring(labels_pred):
+        return -np.inf
+
+    clusterer = ScipyHierarchicalClustering(affinity=euclidean_distances,
+                                            scoring=_scoring)
+    labels = clusterer.fit_predict(X)
+    assert_array_equal([100], np.bincount(labels))
+
+
+def test_shc_default_euclidean():
+    """Test default parameters of SHC, using euclidean distance."""
+    X, _ = generate_data(supervised=False, affinity=False)
     clusterer = ScipyHierarchicalClustering(n_clusters=4)
     labels = clusterer.fit_predict(X)
     assert_array_equal([25, 25, 25, 25], np.bincount(labels))
 
 
-def test_scipy_hierarchical_clustering_custom_affinity(testData):
-    """Using custom affinity function."""
-    X, y = testData
+def test_shc_custom_affinity():
+    """Test custom affinity function in SHC."""
+    X, _ = generate_data(supervised=False, affinity=False)
     clusterer = ScipyHierarchicalClustering(affinity=euclidean_distances,
+                                            scoring_data="affinity",
                                             n_clusters=4)
     labels = clusterer.fit_predict(X)
     assert_array_equal([25, 25, 25, 25], np.bincount(labels))
 
 
-def test_scipy_hierarchical_clustering_precomputed_distances(testData):
-    """Using precomputed distances."""
-    X, y = testData
-    d = euclidean_distances(X)
-    d = (d + d.T) / 2.0
-    d /= d.max()
+def test_shc_precomputed_distance():
+    """Test using precomputed distances in SHC."""
+    X, _ = generate_data(supervised=False, affinity=True)
     clusterer = ScipyHierarchicalClustering(affinity="precomputed",
+                                            scoring_data="affinity",
                                             n_clusters=4)
-    labels = clusterer.fit_predict(d)
+    labels = clusterer.fit_predict(X)
     assert_array_equal([25, 25, 25, 25], np.bincount(labels))
 
 
-def test_scipy_hierarchical_clustering_number_clusters(testData):
-    """Changing number of clusters."""
+def test_shc_n_clusters():
+    """Test changing number of clusters in SHC."""
+    X, _ = generate_data(supervised=False, affinity=True)
+
     clusterer = ScipyHierarchicalClustering(affinity="precomputed",
+                                            scoring_data="affinity",
                                             n_clusters=4)
-    X, y = testData
-    d = euclidean_distances(X)
-    d = (d + d.T) / 2.0
-    d /= d.max()
-    labels = clusterer.fit_predict(d)
+
+    labels = clusterer.fit_predict(X)
+    assert_equal(len(np.unique(labels)), 4)
     clusterer.set_params(n_clusters=10)
     labels = clusterer.labels_
     assert_equal(len(np.unique(labels)), 10)
 
 
-def test_scipy_hierarchical_clustering_threshold(testData):
-    """Changing threshold."""
+def test_shc_threshold():
+    """Test changing threshold in SHC."""
+    X, _ = generate_data(supervised=False, affinity=True)
+
     clusterer = ScipyHierarchicalClustering(affinity="precomputed",
+                                            scoring_data="affinity",
                                             n_clusters=4)
-    X, y = testData
-    d = euclidean_distances(X)
-    d = (d + d.T) / 2.0
-    d /= d.max()
-    labels = clusterer.fit_predict(d)
+
+    labels = clusterer.fit_predict(X)
     clusterer.set_params(threshold=clusterer.linkage_[-4,  2])
     labels = clusterer.labels_
     assert_array_equal([25, 25, 25, 25], np.bincount(labels))
 
 
-def test_scipy_hierarchical_clustering_validation(testData):
-    """Test the validation of hyper-parameters and input data."""
-    X, y = testData
+def test_shc_validation():
+    """Test the validation of hyper-parameters and input data in SHC"""
+    X, _ = generate_data(supervised=False, affinity=False)
 
     with pytest.raises(ValueError):
         clusterer = ScipyHierarchicalClustering(n_clusters=len(X) + 1)
@@ -121,36 +230,6 @@ def test_scipy_hierarchical_clustering_validation(testData):
         clusterer = ScipyHierarchicalClustering(n_clusters=-1)
         labels = clusterer.fit_predict(X)
 
-
-@pytest.fixture
-def semiSupervised():
-    """Preparing a test data for semi_Supervised cases."""
-    random_state = check_random_state(42)
-    X, y = make_blobs(centers=4, shuffle=False, random_state=random_state)
-    mask = random_state.randint(2, size=len(y)).astype(np.bool)
-    y[mask] = -1
-    return X, y
-
-
-def test_scipy_hierarchical_clustering_semi_supervised_labels(semiSupervised):
-    """Test semi-supervised learning for Scipy hierarchical clustering."""
-    X, y = semiSupervised
-
-    # We should find all 4 clusters
-    clusterer = ScipyHierarchicalClustering(scoring=b3_f_score)
-    clusterer.fit(X, y)
-    labels = clusterer.labels_
-    assert_array_equal([25, 25, 25, 25], np.bincount(labels))
-    assert_equal(hasattr(clusterer, "best_threshold_"), True)
-
-
-def test_sp_hierarchical_clustering_semi_supervised_no_label(semiSupervised):
-    """Test semi-supervised Scipy hierarchical clustering unkown lables."""
-    X, y = semiSupervised
-
-    # All labels are unknown, hence it should yield a single cluster
-    clusterer = ScipyHierarchicalClustering()
-    y[:] = -1
-    clusterer.fit(X, y)
-    labels = clusterer.labels_
-    assert_array_equal([100], np.bincount(labels))
+    with pytest.raises(ValueError):
+        clusterer = ScipyHierarchicalClustering(scoring_data="affinity")
+        labels = clusterer.fit_predict(X)

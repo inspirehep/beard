@@ -10,7 +10,7 @@
 """Scikit-Learn compatible wrappers of clustering algorithms.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
-.. codeauthor:: Hussein AL-NATSHEH <h.natsheh@ciapple.com>
+.. codeauthor:: Hussein Al-Natsheh <h.natsheh@ciapple.com>
 
 """
 import numpy as np
@@ -37,7 +37,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
     def __init__(self, method="single", affinity="euclidean",
                  threshold=None, n_clusters=None, criterion="distance",
                  depth=2, R=None, monocrit=None, scoring=None,
-                 affinity_score=False):
+                 scoring_data=None):
         """Initialize.
 
         Parameters
@@ -49,7 +49,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         :param affinity: string or callable
             The distance metric to use.
             - "precomputed": assume that X is a distance matrix;
-            - callable: a function returning a distance matrix;
+            - callable: a function returning a distance matrix.
             - Otherwise, any value supported by
               scipy.cluster.hierarchy.linkage.
 
@@ -79,17 +79,29 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
             The statistics upon which non-singleton i is thresholded.
             See scipy.cluster.hierarchy.fcluster for further details.
 
+         :param scoring_data: string or None
+            The type of input data to pass to the scoring function:
+            - "raw": for passing the original X array;
+            - "affinity": for passing an affinity matrix Xa;
+            - None: for not passing anything but the labels.
+
         :param scoring: callable
             The scoring function to maximize in order to estimate the best
-            threshold. There are 4 possibles cases based on data availability:
-            - ground_truth and affinity: scoring(X, labels_true, labels_pred)
-            - ground_truth but not affinity: scoring(labels_true, labels_pred)
-            - affinity but not ground_truth: scoring(X, labels_pred)
-            - none: scoring(labels_pred).
+            threshold. There are 6 possible cases based on the availability of
+            ground truth data passed in `y` and the value of `scoring_data`:
+                - Ground truth data and scoring_data == "raw":
+                    scoring(X, label_true, label_pred);
+                - No ground truth data and scoring_data == "raw":
+                    scoring(X, label_pred);
+                - Ground truth data and scoring_data == "affinity":
+                    scoring(Xa, label_true, label_pred);
+                - No ground truth data and scoring_data == "affinity":
+                    scoring(Xa, label_pred);
+                - Ground truth data and scoring_data is None:
+                    scoring(label_true, label_pred);
+                - No ground truth data and scoring_data is None:
+                    scoring(label_pred).
 
-        :param affinity_score: boolean
-            A flag that must be True if the scoring function requires the
-            affinity as an input. False otherwise.
         """
         self.method = method
         self.affinity = affinity
@@ -100,7 +112,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         self.R = R
         self.monocrit = monocrit
         self.scoring = scoring
-        self.affinity_score = affinity_score
+        self.scoring_data = scoring_data
 
     def fit(self, X, y=None):
         """Perform hierarchical clustering on input data.
@@ -121,40 +133,42 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         :returns: self
         """
         X = np.array(X)
-        size = X.shape[0]
+        X_raw = X
+        n_samples = X.shape[0]
 
         # Build linkage matrix
         if self.affinity == "precomputed":
-            Xs = X
+            X_affinity = X
             i, j = np.triu_indices(X.shape[0], k=1)
             X = X[i, j]
             self.linkage_ = hac.linkage(X, method=self.method)
 
         elif callable(self.affinity):
             X = self.affinity(X)
-            Xs = X
+            X_affinity = X
             i, j = np.triu_indices(X.shape[0], k=1)
             X = X[i, j]
             self.linkage_ = hac.linkage(X, method=self.method)
+
         else:
+            X_affinity = None
             self.linkage_ = hac.linkage(X,
                                         method=self.method,
                                         metric=self.affinity)
 
-        # Estimate threshold in case of semi-supervised or unsupervised.
+        if self.scoring_data == "affinity" and X_affinity is None:
+            raise ValueError("The scoring function expects an affinity matrix,"
+                             " which cannot be computed from the combination"
+                             " of parameters you provided.")
+
+        # Estimate threshold in case of semi-supervised or unsupervised
         # As default value we use the highest so we obtain only 1 cluster.
         best_threshold = self.linkage_[-1, 2]
-
-        if y is not None:
-            y_arr = np.array(y)
-            all_y_neg = y_arr.sum() == len(y_arr) * -1
-            ground_truth = y is not None and not all_y_neg
-        else:
-            ground_truth = False
-
         n_clusters = self.n_clusters
         scoring = self.scoring
         threshold = self.threshold
+        ground_truth = (y is not None) and np.any(np.array(y) != -1)
+
         if threshold is None and n_clusters is None and scoring is not None:
             best_score = -np.inf
             thresholds = np.concatenate(([0],
@@ -168,31 +182,35 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
                                       criterion=self.criterion,
                                       depth=self.depth, R=self.R,
                                       monocrit=self.monocrit)
+
                 if ground_truth:
                     train = (y != -1)
 
-                    if not self.affinity_score:
+                    if self.scoring_data == "raw":
+                        score = scoring(X_raw, y[train], labels[train])
+
+                    elif self.scoring_data == "affinity":
+                        score = scoring(X_affinity, y[train], labels[train])
+
+                    else:
                         score = scoring(y[train], labels[train])
-                    else:
-                        score = scoring(Xs, y[train], labels[train])
 
-                elif self.affinity_score:
-                    n_labels = len(np.unique(labels))
-                    n_samples = Xs.shape[0]
-
-                    if 1 < n_labels < n_samples:
-                        score = scoring(Xs, labels)
-                    else:
-                        score = -np.inf
                 else:
-                    score = scoring(labels)
+                    if self.scoring_data == "raw":
+                        score = scoring(X_raw, labels)
+
+                    elif self.scoring_data == "affinity":
+                        score = scoring(X_affinity, labels)
+
+                    else:
+                        score = scoring(labels)
 
                 if score >= best_score:
                     best_score = score
                     best_threshold = threshold
 
         self.best_threshold_ = best_threshold
-        self.size_ = size
+        self.n_samples_ = n_samples
 
         return self
 
@@ -206,8 +224,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         n_clusters = self.n_clusters
 
         if n_clusters is not None:
-
-            if n_clusters < 1 or n_clusters > self.size_:
+            if n_clusters < 1 or n_clusters > self.n_samples_:
                 raise ValueError("n_clusters must be within [1; n_samples].")
             else:
                 thresholds = np.concatenate(([0],
@@ -226,19 +243,17 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
                         _, labels = np.unique(labels, return_inverse=True)
                         return labels
 
-        threshold = self.threshold
+        else:
+            threshold = self.threshold
 
-        # Override threshold with the estimated one if it is None
-        if threshold is None:
-            threshold = self.best_threshold_
+            # Override threshold with the estimated one if it is None
+            if threshold is None:
+                threshold = self.best_threshold_
 
-        if threshold is not None:
             labels = hac.fcluster(self.linkage_, threshold,
                                   criterion=self.criterion, depth=self.depth,
                                   R=self.R, monocrit=self.monocrit)
 
             _, labels = np.unique(labels, return_inverse=True)
-            return labels
 
-        else:
-            raise ValueError("Clustering error. Check the inputs combination.")
+            return labels
