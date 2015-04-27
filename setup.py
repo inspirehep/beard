@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # This file is part of Beard.
-# Copyright (C) 2014 CERN.
+# Copyright (C) 2014, 2015 CERN.
 #
 # Beard is a free software; you can redistribute it and/or modify it
 # under the terms of the Revised BSD License; see LICENSE file for
@@ -10,10 +10,11 @@
 """Setup file for Beard.
 
 .. codeauthor:: Mateusz Susik <mateusz.susik@cern.ch>
+.. codeauthor:: Jan Aage Lavik <jan.age.lavik@cern.ch>
 
 """
 
-from distutils.core import setup
+from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 import os
 import re
@@ -50,6 +51,8 @@ class PyTest(TestCommand):
         errno = pytest.main(self.pytest_args)
         sys.exit(errno)
 
+
+packages = find_packages(exclude=['doc', 'examples'])
 # Get the version string. Cannot be done with import!
 with open(os.path.join("beard", "__init__.py"), "rt") as f:
     _version = re.search(
@@ -108,7 +111,7 @@ _parameters = {
     "license": "BSD",
     "long_description": open("README.rst").read(),
     "name": "beard",
-    "packages": ["beard"],
+    "packages": packages,
     "platforms": "any",
     "tests_require": _tests_require,
     "url": "https://github.com/inveniosoftware/beard",
