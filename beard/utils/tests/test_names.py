@@ -16,7 +16,8 @@
 
 from beard.ext.metaphone import dm
 
-from ..names import normalize_name, dm_tokenize_name
+from beard.utils.names import normalize_name
+from beard.utils.names import dm_tokenize_name
 
 
 def test_normalize_name():

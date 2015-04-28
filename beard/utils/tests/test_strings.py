@@ -13,7 +13,7 @@
 
 """
 
-from ..strings import asciify
+from beard.utils.strings import asciify
 
 
 def test_asciify():
