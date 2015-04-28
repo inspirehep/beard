@@ -10,9 +10,9 @@ language: python
 matrix:
   include:
     - python: "2.7"
-      env: PYTHON_VERSION="2.7" NUMPY_VERSION="1.9" SCIPY_VERSION="0.14" SKLEARN_VERSION="0.15.2"
+      env: PYTHON_VERSION="2.7" NUMPY_VERSION="1.9" SCIPY_VERSION="0.15" SKLEARN_VERSION="0.16.1"
     - python: "3.4"
-      env: PYTHON_VERSION="3.4" NUMPY_VERSION="1.9" SCIPY_VERSION="0.14" SKLEARN_VERSION="0.15.2"
+      env: PYTHON_VERSION="3.4" NUMPY_VERSION="1.9" SCIPY_VERSION="0.15" SKLEARN_VERSION="0.16.1"
 
 install: source travis-install.sh
 
