@@ -17,7 +17,7 @@ from beard.utils.strings import asciify
 
 
 def test_asciify():
-    """Test of asciify"""
+    """Test of asciify."""
     assert asciify("") == ""
     assert asciify("foo") == "foo"
     assert asciify("bèård") == "beard"
