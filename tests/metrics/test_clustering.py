@@ -20,16 +20,16 @@ from numpy.testing import assert_equal
 from numpy.testing import assert_almost_equal
 import pytest
 
-from ..clustering import b3_precision_recall_fscore
-from ..clustering import b3_precision_score
-from ..clustering import b3_recall_score
-from ..clustering import b3_f_score
-from ..clustering import paired_precision_recall_fscore
-from ..clustering import paired_precision_score
-from ..clustering import paired_recall_score
-from ..clustering import paired_f_score
-from ..clustering import _cluster_samples
-from ..clustering import _general_merge_distance
+from beard.metrics.clustering import b3_precision_recall_fscore
+from beard.metrics.clustering import b3_precision_score
+from beard.metrics.clustering import b3_recall_score
+from beard.metrics.clustering import b3_f_score
+from beard.metrics.clustering import paired_precision_recall_fscore
+from beard.metrics.clustering import paired_precision_score
+from beard.metrics.clustering import paired_recall_score
+from beard.metrics.clustering import paired_f_score
+from beard.metrics.clustering import _cluster_samples
+from beard.metrics.clustering import _general_merge_distance
 
 
 def test_b3_precision_recall_fscore():

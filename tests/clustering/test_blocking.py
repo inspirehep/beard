@@ -27,9 +27,9 @@ from sklearn.datasets import make_blobs
 from sklearn.metrics.pairwise import euclidean_distances
 from sklearn.utils import check_random_state
 
-from ..blocking import BlockClustering
-from ..wrappers import ScipyHierarchicalClustering
-from ...metrics import paired_f_score
+from beard.clustering import BlockClustering
+from beard.clustering import ScipyHierarchicalClustering
+from beard.metrics import paired_f_score
 
 random_state = check_random_state(42)
 X, y = make_blobs(centers=4, shuffle=False, random_state=random_state)

@@ -17,8 +17,8 @@ import numpy as np
 from numpy.testing import assert_array_equal
 from numpy.testing import assert_equal
 
-from ..transformers import FuncTransformer
-from ..transformers import Shaper
+from beard.utils.transformers import FuncTransformer
+from beard.utils.transformers import Shaper
 
 
 def test_func_transformer():

@@ -56,8 +56,8 @@ RE_REMOVE_NON_CHARACTERS = re.compile('[^a-zA-Z\',\s]+')
 DROPPED_AFFIXES = {'a', 'ab', 'am', 'ap', 'abu', 'al', 'auf', 'aus', 'bar',
                    'bath', 'bat', 'ben', 'bet', 'bin', 'bint', 'd', 'da',
                    'dall', 'dalla', 'das', 'de', 'degli', 'del', 'dell',
-                   'della', 'dem', 'den', 'der', 'di', 'do', 'dos', 'du', 'e',
-                   'el', 'i', 'ibn', 'im', 'jr', 'l', 'la', 'las', 'le',
+                   'della', 'dem', 'den', 'der', 'di', 'do', 'dos', 'ds', 'du',
+                   'e', 'el', 'i', 'ibn', 'im', 'jr', 'l', 'la', 'las', 'le',
                    'los', 'm', 'mac', 'mc', 'mhic', 'mic', 'o', 'ter', 'und',
                    'v', 'van', 'vom', 'von', 'zu', 'zum', 'zur'}
 
@@ -150,3 +150,34 @@ def tokenize_name(name, handle_soft_sign=True, drop_common_affixes=True):
             tokens[0] = without_affixes
 
     return tokens
+
+RE_CHARACTERS = re.compile('\w')
+
+
+@memoize
+def first_name_initial(name):
+    """Get the initial from the first given name if available.
+
+    Parameters
+    ----------
+    :param name: string
+        Name of the author. Usually it should be in the format:
+        surnames, first names.
+
+    Returns
+    -------
+    :return: string
+        The first initial. Asciified one character, lowercase if available,
+        empty string otherwise.
+    """
+    try:
+        asciified = asciify(name.split(",")[1]).lower().strip()
+        return RE_CHARACTERS.findall(asciified)[0]
+    except IndexError:
+        split_name = name.split(" ")
+        if len(split_name) > 1:
+            # For example "John Smith", without comma. The first string should
+            # indicate the first given name.
+            asciified = asciify(split_name[0]).lower().strip()
+            return RE_CHARACTERS.findall(asciified)[0]
+        return ""

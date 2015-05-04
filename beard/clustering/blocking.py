@@ -26,22 +26,20 @@ from sklearn.base import clone
 from sklearn.base import ClusterMixin
 from sklearn.utils import column_or_1d
 
-
-def _single(X):
-    return np.zeros(len(X), dtype=np.int)
+from .blocking_funcs import block_single
 
 
 class _SingleClustering(BaseEstimator, ClusterMixin):
     def fit(self, X, y=None):
-        self.labels_ = _single(X)
+        self.labels_ = block_single(X)
         return self
 
     def partial_fit(self, X, y=None):
-        self.labels_ = _single(X)
+        self.labels_ = block_single(X)
         return self
 
     def predict(self, X):
-        return _single(X)
+        return block_single(X)
 
 
 def _parallel_fit(fit_, partial_fit_, b, X, y, clusterer, verbose):
@@ -119,7 +117,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
     def _validate(self, X, blocks):
         """Validate hyper-parameters and input data."""
         if self.blocking == "single":
-            blocks = _single(X)
+            blocks = block_single(X)
         elif self.blocking == "precomputed":
             if blocks is not None and len(blocks) == len(X):
                 blocks = column_or_1d(blocks).ravel()

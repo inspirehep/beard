@@ -21,11 +21,11 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler
 
-from ..pairs import PairTransformer
-from ..pairs import CosineSimilarity
-from ..pairs import AbsoluteDifference
-from ..pairs import JaccardSimilarity
-from ...utils import FuncTransformer
+from beard.similarity import PairTransformer
+from beard.similarity import CosineSimilarity
+from beard.similarity import AbsoluteDifference
+from beard.similarity import JaccardSimilarity
+from beard.utils import FuncTransformer
 
 
 def test_pair_transformer():

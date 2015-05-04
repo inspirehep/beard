@@ -19,11 +19,11 @@ from numpy.testing import assert_almost_equal
 import pytest
 from pytest import mark
 
-from ..text import _find_all
-from ..text import _jaro_matching
-from ..text import jaro
-from ..text import jaro_winkler
-from ..text import levenshtein
+from beard.metrics.text import _find_all
+from beard.metrics.text import _jaro_matching
+from beard.metrics.text import jaro
+from beard.metrics.text import jaro_winkler
+from beard.metrics.text import levenshtein
 
 
 @mark.parametrize('s, letter, occur',

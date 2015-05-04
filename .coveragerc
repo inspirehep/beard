@@ -7,4 +7,5 @@
 
 [run]
 source = beard
-omit = /*/tests/*  */beard/ext/*
+omit = beard/ext/*
+
