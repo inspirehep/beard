@@ -173,7 +173,6 @@ def test_shc_custom_affinity():
     """Test custom affinity function in SHC."""
     X, _ = generate_data(supervised=False, affinity=False)
     clusterer = ScipyHierarchicalClustering(affinity=euclidean_distances,
-                                            scoring_data="affinity",
                                             n_clusters=4)
     labels = clusterer.fit_predict(X)
     assert_array_equal([25, 25, 25, 25], np.bincount(labels))
@@ -183,7 +182,6 @@ def test_shc_precomputed_distance():
     """Test using precomputed distances in SHC."""
     X, _ = generate_data(supervised=False, affinity=True)
     clusterer = ScipyHierarchicalClustering(affinity="precomputed",
-                                            scoring_data="affinity",
                                             n_clusters=4)
     labels = clusterer.fit_predict(X)
     assert_array_equal([25, 25, 25, 25], np.bincount(labels))
@@ -194,7 +192,6 @@ def test_shc_n_clusters():
     X, _ = generate_data(supervised=False, affinity=True)
 
     clusterer = ScipyHierarchicalClustering(affinity="precomputed",
-                                            scoring_data="affinity",
                                             n_clusters=4)
 
     labels = clusterer.fit_predict(X)
@@ -208,14 +205,22 @@ def test_shc_threshold():
     """Test changing threshold in SHC."""
     X, _ = generate_data(supervised=False, affinity=True)
 
+    # n_clusters has precedence over threshold
     clusterer = ScipyHierarchicalClustering(affinity="precomputed",
-                                            scoring_data="affinity",
-                                            n_clusters=4)
+                                            n_clusters=2)
+    labels1 = clusterer.fit_predict(X)
+    clusterer.set_params(threshold=clusterer.linkage_[-4, 2])
+    labels2 = clusterer.labels_
+    assert_array_equal(labels1, labels2)
+    assert_equal(len(np.unique(labels1)), 2)
 
-    labels = clusterer.fit_predict(X)
-    clusterer.set_params(threshold=clusterer.linkage_[-4,  2])
+    # change threshold
+    clusterer.set_params(n_clusters=None, threshold=clusterer.linkage_[-5, 2])
     labels = clusterer.labels_
-    assert_array_equal([25, 25, 25, 25], np.bincount(labels))
+    assert_equal(len(np.unique(labels)), 5)
+    clusterer.set_params(threshold=clusterer.linkage_[-4, 2])
+    labels = clusterer.labels_
+    assert_equal(len(np.unique(labels)), 4)
 
 
 def test_shc_validation():

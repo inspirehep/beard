@@ -53,15 +53,13 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
             - Otherwise, any value supported by
               scipy.cluster.hierarchy.linkage.
 
-        :param threshold: float or None
-            The thresold to apply when forming flat clusters. In case
-            of semi-supervised clustering, this value is overridden by
-            the threshold maximizing the provided scoring function on
-            the labeled samples.
-            See scipy.cluster.hierarchy.fcluster for further details.
-
         :param n_clusters: int
-            The number of flat clusters to form, if threshold=None.
+            The number of flat clusters to form.
+
+        :param threshold: float or None
+            The thresold to apply when forming flat clusters, if 
+            n_clusters=None. 
+            See scipy.cluster.hierarchy.fcluster for further details.
 
         :param criterion: string
             The criterion to use in forming flat clusters.
