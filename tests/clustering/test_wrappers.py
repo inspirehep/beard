@@ -59,7 +59,7 @@ def test_shc_semi_supervised_scoring_data_raw():
         score = b3_f_score(labels_true, labels_pred)
         return score
 
-    clusterer = ScipyHierarchicalClustering(scoring=_scoring,
+    clusterer = ScipyHierarchicalClustering(supervised_scoring=_scoring,
                                             scoring_data="raw")
     clusterer.fit(X, y)
     labels = clusterer.labels_
@@ -77,7 +77,7 @@ def test_shc_semi_supervised_scoring_data_affinity():
         score = b3_f_score(labels_true, labels_pred)
         return score
 
-    clusterer = ScipyHierarchicalClustering(scoring=_scoring1,
+    clusterer = ScipyHierarchicalClustering(supervised_scoring=_scoring1,
                                             scoring_data="affinity",
                                             affinity=euclidean_distances)
     clusterer.fit(X1, y1)
@@ -93,7 +93,7 @@ def test_shc_semi_supervised_scoring_data_affinity():
         score = b3_f_score(labels_true, labels_pred)
         return score
 
-    clusterer = ScipyHierarchicalClustering(scoring=_scoring2,
+    clusterer = ScipyHierarchicalClustering(supervised_scoring=_scoring2,
                                             scoring_data="affinity",
                                             affinity="precomputed")
     clusterer.fit(X2, y2)
@@ -110,7 +110,7 @@ def test_shc_semi_supervised_scoring_data_none():
         return score
 
     # We should find all 4 clusters
-    clusterer = ScipyHierarchicalClustering(scoring=_scoring)
+    clusterer = ScipyHierarchicalClustering(supervised_scoring=_scoring)
     clusterer.fit(X, y)
     labels = clusterer.labels_
     assert_array_equal([25, 25, 25, 25], np.bincount(labels))
@@ -121,7 +121,7 @@ def test_shc_unsupervised_scoring_data_raw():
     X, _ = generate_data(supervised=False, affinity=False)
     _scoring = partial(silhouette_score, metric="euclidean")
     clusterer = ScipyHierarchicalClustering(affinity=euclidean_distances,
-                                            scoring=_scoring,
+                                            unsupervised_scoring=_scoring,
                                             scoring_data="raw")
     labels = clusterer.fit_predict(X)
     assert_array_equal([25, 25, 25, 25], np.bincount(labels))
@@ -133,7 +133,7 @@ def test_shc_unsupervised_scoring_data_affinity():
     X, _ = generate_data(supervised=False, affinity=False)
     _scoring = partial(silhouette_score, metric="precomputed")
     clusterer = ScipyHierarchicalClustering(affinity=euclidean_distances,
-                                            scoring=_scoring,
+                                            unsupervised_scoring=_scoring,
                                             scoring_data="affinity")
     labels = clusterer.fit_predict(X)
     assert_array_equal([25, 25, 25, 25], np.bincount(labels))
@@ -142,7 +142,7 @@ def test_shc_unsupervised_scoring_data_affinity():
     X, _ = generate_data(supervised=False, affinity=True)
     _scoring = partial(silhouette_score, metric="precomputed")
     clusterer = ScipyHierarchicalClustering(affinity="precomputed",
-                                            scoring=_scoring,
+                                            unsupervised_scoring=_scoring,
                                             scoring_data="affinity")
     labels = clusterer.fit_predict(X)
     assert_array_equal([25, 25, 25, 25], np.bincount(labels))
@@ -156,7 +156,7 @@ def test_shc_unsupervised_scoring_data_None():
         return -np.inf
 
     clusterer = ScipyHierarchicalClustering(affinity=euclidean_distances,
-                                            scoring=_scoring)
+                                            unsupervised_scoring=_scoring)
     labels = clusterer.fit_predict(X)
     assert_array_equal([100], np.bincount(labels))
 
