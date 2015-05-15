@@ -102,13 +102,25 @@ def b3_precision_recall_fscore(labels_true, labels_pred):
         true_clusters[true_cluster_id].add(i)
         pred_clusters[pred_cluster_id].add(i)
 
+    for cluster_id, cluster in true_clusters.items():
+        true_clusters[cluster_id] = frozenset(cluster)
+    for cluster_id, cluster in pred_clusters.items():
+        pred_clusters[cluster_id] = frozenset(cluster)
+
     precision = 0.0
     recall = 0.0
+
+    intersections = {}
 
     for i in range(n_samples):
         pred_cluster_i = pred_clusters[labels_pred[i]]
         true_cluster_i = true_clusters[labels_true[i]]
-        intersection = pred_cluster_i.intersection(true_cluster_i)
+
+        if (pred_cluster_i, true_cluster_i) in intersections:
+            intersection = intersections[(pred_cluster_i, true_cluster_i)]
+        else:
+            intersection = pred_cluster_i.intersection(true_cluster_i)
+            intersections[(pred_cluster_i, true_cluster_i)] = intersection
 
         precision += len(intersection) / len(pred_cluster_i)
         recall += len(intersection) / len(true_cluster_i)
