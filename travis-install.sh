@@ -17,9 +17,6 @@ set -e
 export CC=gcc
 export CXX=g++
 
-sudo apt-get update -qq
-sudo apt-get install -qq libatlas3gf-base libatlas-dev
-
 # Deactivate the travis-provided virtual environment and setup a
 # conda-based environment instead
 deactivate
