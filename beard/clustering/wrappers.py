@@ -36,8 +36,8 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
 
     def __init__(self, method="single", affinity="euclidean",
                  threshold=None, n_clusters=None, criterion="distance",
-                 depth=2, R=None, monocrit=None, scoring=None,
-                 scoring_data=None):
+                 depth=2, R=None, monocrit=None, unsupervised_scoring=None,
+                 supervised_scoring=None, scoring_data=None):
         """Initialize.
 
         Parameters
@@ -57,8 +57,8 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
             The number of flat clusters to form.
 
         :param threshold: float or None
-            The thresold to apply when forming flat clusters, if 
-            n_clusters=None. 
+            The thresold to apply when forming flat clusters, if
+            n_clusters=None.
             See scipy.cluster.hierarchy.fcluster for further details.
 
         :param criterion: string
@@ -83,22 +83,28 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
             - "affinity": for passing an affinity matrix Xa;
             - None: for not passing anything but the labels.
 
-        :param scoring: callable
+        :param supervised_scoring: callable or None
             The scoring function to maximize in order to estimate the best
-            threshold. There are 6 possible cases based on the availability of
-            ground truth data passed in `y` and the value of `scoring_data`:
-                - Ground truth data and scoring_data == "raw":
-                    scoring(X, label_true, label_pred);
-                - No ground truth data and scoring_data == "raw":
-                    scoring(X, label_pred);
-                - Ground truth data and scoring_data == "affinity":
-                    scoring(Xa, label_true, label_pred);
-                - No ground truth data and scoring_data == "affinity":
-                    scoring(Xa, label_pred);
-                - Ground truth data and scoring_data is None:
-                    scoring(label_true, label_pred);
-                - No ground truth data and scoring_data is None:
-                    scoring(label_pred).
+            threshold. Labels must be provided in y for this scoring function.
+            There are 3 possible cases based on the value of `scoring_data`:
+                - scoring_data == "raw":
+                    supervised_scoring(X_raw, label_true, label_pred);
+                - scoring_data == "affinity":
+                    supervised_scoring(X_affinity, label_true, label_pred);
+                - scoring_data is None:
+                    supervised_scoring(label_true, label_pred).
+
+        :param unsupervised_scoring: callable or None
+            The scoring function to maximize in order to estimate the best
+            threshold.  Labels must not be provided in y for this scoring
+            function.There are 3 possible cases based on the value of
+            `scoring_data`:
+                - scoring_data == "raw":
+                    unsupervised_scoring(X_raw, label_pred);
+                - scoring_data == "affinity":
+                    unsupervised_scoring(X_affinity, label_pred);
+                - scoring_data is None:
+                    unsupervised_scoring(label_pred).
 
         """
         self.method = method
@@ -109,7 +115,8 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         self.depth = depth
         self.R = R
         self.monocrit = monocrit
-        self.scoring = scoring
+        self.unsupervised_scoring = unsupervised_scoring
+        self.supervised_scoring = supervised_scoring
         self.scoring_data = scoring_data
 
     def fit(self, X, y=None):
@@ -163,11 +170,14 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         # As default value we use the highest so we obtain only 1 cluster.
         best_threshold = self.linkage_[-1, 2]
         n_clusters = self.n_clusters
-        scoring = self.scoring
+        supervised_scoring = self.supervised_scoring
+        unsupervised_scoring = self.unsupervised_scoring
         threshold = self.threshold
         ground_truth = (y is not None) and np.any(np.array(y) != -1)
+        scoring = supervised_scoring is not None or \
+            unsupervised_scoring is not None
 
-        if threshold is None and n_clusters is None and scoring is not None:
+        if threshold is None and n_clusters is None and scoring:
             best_score = -np.inf
             thresholds = np.concatenate(([0],
                                          self.linkage_[:, 2],
@@ -181,27 +191,33 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
                                       depth=self.depth, R=self.R,
                                       monocrit=self.monocrit)
 
-                if ground_truth:
+                if ground_truth and supervised_scoring is not None:
                     train = (y != -1)
 
                     if self.scoring_data == "raw":
-                        score = scoring(X_raw, y[train], labels[train])
+                        score = supervised_scoring(X_raw, y[train],
+                                                   labels[train])
 
                     elif self.scoring_data == "affinity":
-                        score = scoring(X_affinity, y[train], labels[train])
+                        score = supervised_scoring(X_affinity, y[train],
+                                                   labels[train])
 
                     else:
-                        score = scoring(y[train], labels[train])
+                        score = supervised_scoring(y[train],
+                                                   labels[train])
 
-                else:
+                elif unsupervised_scoring is not None:
+
                     if self.scoring_data == "raw":
-                        score = scoring(X_raw, labels)
+                        score = unsupervised_scoring(X_raw, labels)
 
                     elif self.scoring_data == "affinity":
-                        score = scoring(X_affinity, labels)
+                        score = unsupervised_scoring(X_affinity, labels)
 
                     else:
-                        score = scoring(labels)
+                        score = unsupervised_scoring(labels)
+                else:
+                    break
 
                 if score >= best_score:
                     best_score = score
