@@ -297,7 +297,7 @@ def block_double_metaphone(X, threshold=1000):
     previously normalized.
 
     The algorithm has two phases. In the first phase, all the signatures with
-    one surname are clustered together. Every different suname token creates
+    one surname are clustered together. Every different surname token creates
     a new block. In the second phase, the signatures
     with multiple surnames are compared with the blocks for the first and
     last surname.
