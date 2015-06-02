@@ -16,6 +16,7 @@
 import numpy as np
 import six
 
+from beard.utils import normalize_name
 from beard.utils.names import dm_tokenize_name
 from beard.utils.names import first_name_initial
 
@@ -493,3 +494,24 @@ def block_single(X):
         equals zero.
     """
     return np.zeros(len(X), dtype=np.int)
+
+
+def block_last_name_first_initial(X):
+    """Blocking function using last name and first initial as key."""
+    def last_name_first_initial(name):
+        names = name.split(",", 1)
+
+        try:
+            name = "%s %s" % (names[0], names[1].strip()[0])
+        except IndexError:
+            name = names[0]
+
+        name = normalize_name(name)
+        return name
+
+    blocks = []
+
+    for signature in X[:, 0]:
+        blocks.append(last_name_first_initial(signature["author_name"]))
+
+    return np.array(blocks)
