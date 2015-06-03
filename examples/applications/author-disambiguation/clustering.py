@@ -7,6 +7,9 @@
 # under the terms of the Revised BSD License; see LICENSE file for
 # more details.
 
+"""Clustering application."""
+
+import argparse
 import cPickle
 import functools
 import json
@@ -16,20 +19,20 @@ from scipy.spatial.distance import squareform
 from sklearn.cross_validation import train_test_split
 
 # These imports are used during unpickling.
-from beard.applications.utils import get_author_full_name
-from beard.applications.utils import get_author_other_names
-from beard.applications.utils import get_author_initials
-from beard.applications.utils import get_author_affiliation
-from beard.applications.utils import get_title
-from beard.applications.utils import get_journal
-from beard.applications.utils import get_abstract
-from beard.applications.utils import get_coauthors
-from beard.applications.utils import get_keywords
-from beard.applications.utils import get_collaborations
-from beard.applications.utils import get_references
-from beard.applications.utils import get_year
-from beard.applications.utils import group_by_signature
-from beard.applications.utils import load_signatures
+from utils import get_author_full_name
+from utils import get_author_other_names
+from utils import get_author_initials
+from utils import get_author_affiliation
+from utils import get_title
+from utils import get_journal
+from utils import get_abstract
+from utils import get_coauthors
+from utils import get_keywords
+from utils import get_collaborations
+from utils import get_references
+from utils import get_year
+from utils import group_by_signature
+from utils import load_signatures
 
 from beard.clustering import BlockClustering
 from beard.clustering import block_last_name_first_initial
@@ -42,7 +45,7 @@ def _affinity(distance_estimator, X, step=10000):
     """Custom affinity function, using a pre-learned distance estimator."""
     all_i, all_j = np.triu_indices(len(X), k=1)
     n_pairs = len(all_i)
-    distances = np.zeros(n_pairs)
+    distances = np.zeros(n_pairs, dtype=np.float64)
 
     for start in range(0, n_pairs, step):
         end = min(n_pairs, start+step)
@@ -55,7 +58,7 @@ def _affinity(distance_estimator, X, step=10000):
         Xt = distance_estimator.predict_proba(Xt)[:, 1]
         distances[start:end] = Xt[:]
 
-    return squareform(distances)
+    return distances
 
 
 def clustering(input_signatures, input_records, distance_model,
@@ -160,7 +163,7 @@ def clustering(input_signatures, input_records, distance_model,
             threshold=clustering_threshold,
             method=clustering_method,
             supervised_scoring=b3_f_score,
-            unsupervised_scoring=silhouette_score,
+            # unsupervised_scoring=silhouette_score,
             scoring_data="affinity"),
         verbose=verbose,
         n_jobs=n_jobs).fit(X, y)
@@ -189,3 +192,26 @@ def clustering(input_signatures, input_records, distance_model,
                   b3_f_score(y_true[train], labels[train]))
             print("B^3 F-score (test) =",
                   b3_f_score(y_true[test], labels[test]))
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--distance_model", default=None, type=str)
+    parser.add_argument("--input_signatures", default=None, type=str)
+    parser.add_argument("--input_records", default=None, type=str)
+    parser.add_argument("--input_clusters", default=None, type=str)
+    parser.add_argument("--output_clusters", default=None, type=str)
+    parser.add_argument("--clustering_method", default="average", type=str)
+    parser.add_argument("--clustering_threshold", default=None, type=float)
+    parser.add_argument("--clustering_test_size", default=None, type=float)
+    parser.add_argument("--clustering_random_state", default=42, type=int)
+    parser.add_argument("--verbose", default=1, type=int)
+    parser.add_argument("--n_jobs", default=-1, type=int)
+
+    args = parser.parse_args()
+
+    clustering(args.input_signatures, args.input_records, args.distance_model,
+               args.input_clusters, args.output_clusters,
+               args.verbose, args.n_jobs, args.clustering_method,
+               args.clustering_random_state, args.clustering_test_size,
+               args.clustering_threshold)

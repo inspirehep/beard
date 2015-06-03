@@ -9,6 +9,7 @@
 
 """Tools for learning the distance model."""
 
+import argparse
 import cPickle
 import json
 import numpy as np
@@ -19,20 +20,20 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import FeatureUnion
 from sklearn.pipeline import Pipeline
 
-from beard.applications.utils import get_author_full_name
-from beard.applications.utils import get_author_other_names
-from beard.applications.utils import get_author_initials
-from beard.applications.utils import get_author_affiliation
-from beard.applications.utils import get_title
-from beard.applications.utils import get_journal
-from beard.applications.utils import get_abstract
-from beard.applications.utils import get_coauthors
-from beard.applications.utils import get_keywords
-from beard.applications.utils import get_collaborations
-from beard.applications.utils import get_references
-from beard.applications.utils import get_year
-from beard.applications.utils import group_by_signature
-from beard.applications.utils import load_signatures
+from utils import get_author_full_name
+from utils import get_author_other_names
+from utils import get_author_initials
+from utils import get_author_affiliation
+from utils import get_title
+from utils import get_journal
+from utils import get_abstract
+from utils import get_coauthors
+from utils import get_keywords
+from utils import get_collaborations
+from utils import get_references
+from utils import get_year
+from utils import group_by_signature
+from utils import load_signatures
 
 from beard.similarity import AbsoluteDifference
 from beard.similarity import CosineSimilarity
@@ -219,3 +220,14 @@ def learn_model(distance_pairs, input_signatures, input_records,
     cPickle.dump(distance_estimator,
                  open(distance_model, "w"),
                  protocol=cPickle.HIGHEST_PROTOCOL)
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--distance_pairs", default=None, type=str)
+    parser.add_argument("--distance_model", default=None, type=str)
+    parser.add_argument("--input_signatures", default=None, type=str)
+    parser.add_argument("--input_records", default=None, type=str)
+    args = parser.parse_args()
+
+    learn_model(args.distance_pairs, args.input_signatures, args.input_records,
+                args.distance_model)

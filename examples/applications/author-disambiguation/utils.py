@@ -267,7 +267,7 @@ def get_year(s):
 
 
 def group_by_signature(r):
-    """Grouping function for PairTransformer
+    """Grouping function for ``PairTransformer``.
 
     Parameters
     ----------
