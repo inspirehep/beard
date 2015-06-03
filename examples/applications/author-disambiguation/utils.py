@@ -89,7 +89,7 @@ def get_author_initials(s):
 
     Parameters
     ----------
-    :param s: string
+    :param s: dict
         Signature
 
     Returns
@@ -108,7 +108,7 @@ def get_author_affiliation(s):
 
     Parameters
     ----------
-    :param s: string
+    :param s: dict
         Signature
 
     Returns
@@ -126,7 +126,7 @@ def get_title(s):
 
     Parameters
     ----------
-    :param s: string
+    :param s: dict
         Signature
 
     Returns
@@ -144,7 +144,7 @@ def get_journal(s):
 
     Parameters
     ----------
-    :param s: string
+    :param s: dict
         Signature
 
     Returns
@@ -162,7 +162,7 @@ def get_abstract(s):
 
     Parameters
     ----------
-    :param s: string
+    :param s: dict
         Signature
 
     Returns
@@ -180,7 +180,7 @@ def get_coauthors(s):
 
     Parameters
     ----------
-    :param s: string
+    :param s: dict
         Signature
 
     Returns
@@ -198,7 +198,7 @@ def get_keywords(s):
 
     Parameters
     ----------
-    :param s: string
+    :param s: dict
         Signature
 
     Returns
@@ -216,7 +216,7 @@ def get_collaborations(s):
 
     Parameters
     ----------
-    :param s: string
+    :param s: dict
         Signature
 
     Returns
@@ -234,7 +234,7 @@ def get_references(s):
 
     Parameters
     ----------
-    :param s: string
+    :param s: dict
         Signature
 
     Returns
@@ -253,7 +253,7 @@ def get_year(s):
 
     Parameters
     ----------
-    :param s: string
+    :param s: dict
         Signature
 
     Returns
@@ -271,7 +271,8 @@ def group_by_signature(r):
 
     Parameters
     ----------
-    :param r: signature in a singleton.
+    :param r: iterable
+        signature in a singleton.
 
     Returns
     -------
