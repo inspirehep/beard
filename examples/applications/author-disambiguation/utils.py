@@ -7,7 +7,7 @@
 # under the terms of the Revised BSD License; see LICENSE file for
 # more details.
 
-"""Helpers for ML applications."""
+"""Helpers for author disambiguation."""
 
 import json
 
@@ -17,7 +17,7 @@ from beard.utils import normalize_name
 
 
 def load_signatures(signatures_filename, records_filename):
-    """Load signatures from json fiels.
+    """Load signatures from json files.
 
     Parameters
     ----------

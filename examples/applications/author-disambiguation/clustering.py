@@ -195,7 +195,7 @@ def clustering(input_signatures, input_records, distance_model,
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=usage)
     parser.add_argument("--distance_model", default=None, type=str)
     parser.add_argument("--input_signatures", default=None, type=str)
     parser.add_argument("--input_records", default=None, type=str)
