@@ -128,10 +128,7 @@ def b3_precision_recall_fscore(labels_true, labels_pred):
     precision /= n_samples
     recall /= n_samples
 
-    if precision + recall == 0.0:
-        f_score = 0.0
-    else:
-        f_score = 2 * precision * recall / (precision + recall)
+    f_score = 2 * precision * recall / (precision + recall)
 
     return precision, recall, f_score
 
@@ -232,7 +229,7 @@ def paired_precision_recall_fscore(labels_true, labels_pred):
                                           labels_pred,
                                           fm=_zero, fs=mul)
     try:
-        precision = 1.0 - numerator/denominator
+        precision = 1.0 - numerator / denominator
     except ZeroDivisionError:
         precision = 1.0
 
@@ -243,7 +240,7 @@ def paired_precision_recall_fscore(labels_true, labels_pred):
                                           default_clustering,
                                           fm=mul, fs=_zero)
     try:
-        recall = 1.0 - numerator/denominator
+        recall = 1.0 - numerator / denominator
     except ZeroDivisionError:
         recall = 1.0
 
@@ -340,7 +337,7 @@ def _cluster_samples(labels):
 
 def _general_merge_distance(y_true, y_pred,
                             fs=lambda x, y: 1.0, fm=lambda x, y: 1.0):
-    """Implementation of Slice algorithm for computing generalized merge distance.
+    """Slice algorithm for computing generalized merge distance.
 
     Slice is a linear time algorithm.
 
