@@ -485,7 +485,7 @@ def block_single(X):
     Parameters
     ----------
     :param X: numpy array
-        Array of one element arrays of dictionaries.
+        Array of singletons of dictionaries.
 
     Returns
     -------
@@ -497,7 +497,21 @@ def block_single(X):
 
 
 def block_last_name_first_initial(X):
-    """Blocking function using last name and first initial as key."""
+    """Blocking function using last name and first initial as key.
+
+    The names are normalized before assigning to a block.
+
+    Parameters
+    ----------
+    :param X: numpy array
+        Array of singletons of dictionaries.
+
+    Returns
+    -------
+    :returns: numpy array
+        Array with ids of the blocks. The order of the
+        array is the same as in the ``X`` input parameter.
+    """
     def last_name_first_initial(name):
         names = name.split(",", 1)
 
