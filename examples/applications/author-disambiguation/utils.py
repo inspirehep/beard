@@ -22,10 +22,10 @@ def load_signatures(signatures_filename, records_filename):
     Parameters
     ----------
     :param signatures_filename: string
-        Path to the signatures file
+        Path to the signatures file. The file should be in json format.
 
     :param records_filename: string
-        Path to the records file.
+        Path to the records file. The file should be in json formaat.
 
     Returns
     -------
@@ -52,7 +52,7 @@ def get_author_full_name(s):
 
     Parameters
     ----------
-    :param s: string
+    :param s: dict
         Signature
 
     Returns
@@ -70,7 +70,7 @@ def get_author_other_names(s):
 
     Parameters
     ----------
-    :param s: string
+    :param s: dict
         Signature
 
     Returns

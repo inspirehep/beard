@@ -203,6 +203,9 @@ def learn_model(distance_pairs, input_signatures, input_records,
 
         [{"publication_id": 0,
           "title": "Author disambiguation using Beard", ... }, { ... }, ...]
+
+    :param distance_model: string
+        Path to the file with the distance model. The file should be cPickled.
     """
     pairs = json.load(open(distance_pairs, "r"))
     signatures, records = load_signatures(input_signatures, input_records)
