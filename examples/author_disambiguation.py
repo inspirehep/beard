@@ -22,6 +22,7 @@ from __future__ import print_function
 import numpy as np
 
 from beard.clustering import BlockClustering
+from beard.clustering import block_last_name_first_initial
 from beard.clustering import ScipyHierarchicalClustering
 from beard.metrics import paired_f_score
 from beard.utils import normalize_name
@@ -67,28 +68,6 @@ def affinity(X):
     distances += distances.T
     return distances
 
-
-def blocking(X):
-    """Blocking function using last name and first initial as key."""
-    def last_name_first_initial(name):
-        names = name.split(",", 1)
-
-        try:
-            name = "%s %s" % (names[0], names[1].strip()[0])
-        except IndexError:
-            name = names[0]
-
-        name = normalize_name(name)
-        return name
-
-    blocks = []
-
-    for name in X[:, 0]:
-        blocks.append(last_name_first_initial(name))
-
-    return np.array(blocks)
-
-
 if __name__ == "__main__":
     # Load data
     data = np.load("data/author-disambiguation.npz")
@@ -97,7 +76,7 @@ if __name__ == "__main__":
 
     # Block clustering with fixed threshold
     block_clusterer = BlockClustering(
-        blocking=blocking,
+        blocking=block_last_name_first_initial,
         base_estimator=ScipyHierarchicalClustering(
             threshold=0.5,
             affinity=affinity,
