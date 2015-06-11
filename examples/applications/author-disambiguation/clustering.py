@@ -46,8 +46,10 @@ from beard.clustering import ScipyHierarchicalClustering
 from beard.metrics import b3_f_score
 
 
-def _affinity(distance_estimator, X, step=10000):
+def _affinity(X, step=10000):
     """Custom affinity function, using a pre-learned distance estimator."""
+    # Assumes that 'distance_estimator' lives in global, making things fast
+
     all_i, all_j = np.triu_indices(len(X), k=1)
     n_pairs = len(all_i)
     distances = np.zeros(n_pairs, dtype=np.float64)
@@ -164,11 +166,10 @@ def clustering(input_signatures, input_records, distance_model,
     clusterer = BlockClustering(
         blocking=block_last_name_first_initial,
         base_estimator=ScipyHierarchicalClustering(
-            affinity=functools.partial(_affinity, distance_estimator),
+            affinity=_affinity,
             threshold=clustering_threshold,
             method=clustering_method,
-            supervised_scoring=b3_f_score,
-            scoring_data="affinity"),
+            supervised_scoring=b3_f_score),
         verbose=verbose,
         n_jobs=n_jobs).fit(X, y)
 
