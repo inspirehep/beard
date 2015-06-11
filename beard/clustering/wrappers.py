@@ -142,19 +142,14 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         n_samples = X.shape[0]
 
         # Build linkage matrix
-        if self.affinity == "precomputed":
+        if self.affinity == "precomputed" or callable(self.affinity):
+            if callable(self.affinity):
+                X = self.affinity(X)
             X_affinity = X
-            i, j = np.triu_indices(X.shape[0], k=1)
-            X = X[i, j]
+            if X.ndim == 2:
+                i, j = np.triu_indices(X.shape[0], k=1)
+                X = X[i, j]
             self.linkage_ = hac.linkage(X, method=self.method)
-
-        elif callable(self.affinity):
-            X = self.affinity(X)
-            X_affinity = X
-            i, j = np.triu_indices(X.shape[0], k=1)
-            X = X[i, j]
-            self.linkage_ = hac.linkage(X, method=self.method)
-
         else:
             X_affinity = None
             self.linkage_ = hac.linkage(X,
