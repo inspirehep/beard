@@ -7,17 +7,21 @@
 # under the terms of the Revised BSD License; see LICENSE file for
 # more details.
 
-"""Helpers for author disambiguation."""
+"""Helpers for author disambiguation.
+
+.. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. codeauthor:: Mateusz Susik <mateusz.susik@cern.ch>
+
+"""
 
 import json
-
 
 from beard.utils import name_initials
 from beard.utils import normalize_name
 
 
 def load_signatures(signatures_filename, records_filename):
-    """Load signatures from json files.
+    """Load signatures from JSON files.
 
     Parameters
     ----------

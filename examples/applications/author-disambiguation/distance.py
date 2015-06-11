@@ -7,7 +7,14 @@
 # under the terms of the Revised BSD License; see LICENSE file for
 # more details.
 
-"""Tools for learning the distance model."""
+"""Author disambiguation -- Tools for learning a distance model.
+
+See README.rst for further details.
+
+.. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. codeauthor:: Mateusz Susik <mateusz.susik@cern.ch>
+
+"""
 
 import argparse
 import cPickle
@@ -42,7 +49,7 @@ from beard.utils import FuncTransformer
 from beard.utils import Shaper
 
 
-def _build_distance_estimator(X, y):
+def _build_distance_estimator(X, y, verbose=0):
     """Build a vector reprensation of a pair of signatures."""
     transformer = FeatureUnion([
         ("author_full_name_similarity", Pipeline([
@@ -166,7 +173,7 @@ def _build_distance_estimator(X, y):
                                             max_depth=9,
                                             max_features=10,
                                             learning_rate=0.125,
-                                            verbose=3)
+                                            verbose=verbose)
 
     # Return the whole pipeline
     estimator = Pipeline([("transformer", transformer),
@@ -176,13 +183,13 @@ def _build_distance_estimator(X, y):
 
 
 def learn_model(distance_pairs, input_signatures, input_records,
-                distance_model):
-    """Learn the distance model using the files from the disc.
+                distance_model, verbose=0):
+    """Learn the distance model for pairs of signatures.
 
     Parameters
     ----------
     :param distance_pairs: string
-        Path to the file with distance pairs. The content should be a json
+        Path to the file with signature pairs. The content should be a JSON
         array of tuples (`signature_id1`, `signature_id2`, `target`),
         where `target = 0` if both signatures belong to the same author,
         and `target = 1` otherwise.
@@ -190,7 +197,7 @@ def learn_model(distance_pairs, input_signatures, input_records,
         [(0, 1, 0), (2, 3, 0), (4, 5, 1), ...]
 
     :param input_signatures: string
-        Path to the file with signatures. The content should be a json array
+        Path to the file with signatures. The content should be a JSON array
         of dictionaries holding metadata about signatures.
 
         [{"signature_id": 0,
@@ -198,7 +205,7 @@ def learn_model(distance_pairs, input_signatures, input_records,
           "publication_id": 10, ...}, { ... }, ...]
 
     :param input_records: string
-        Path to the file with records. The content should be a json array of
+        Path to the file with records. The content should be a JSON array of
         dictionaries holding metadata about records
 
         [{"publication_id": 0,
@@ -219,10 +226,11 @@ def learn_model(distance_pairs, input_signatures, input_records,
         y[k] = target
 
     # Learn a distance estimator on paired signatures
-    distance_estimator = _build_distance_estimator(X, y)
+    distance_estimator = _build_distance_estimator(X, y, verbose=verbose)
     cPickle.dump(distance_estimator,
                  open(distance_model, "w"),
                  protocol=cPickle.HIGHEST_PROTOCOL)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -230,7 +238,8 @@ if __name__ == "__main__":
     parser.add_argument("--distance_model", default=None, type=str)
     parser.add_argument("--input_signatures", default=None, type=str)
     parser.add_argument("--input_records", default=None, type=str)
+    parser.add_argument("--verbose", default=1, type=int)
     args = parser.parse_args()
 
     learn_model(args.distance_pairs, args.input_signatures, args.input_records,
-                args.distance_model)
+                args.distance_model, args.verbose)

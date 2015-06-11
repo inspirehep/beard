@@ -7,7 +7,14 @@
 # under the terms of the Revised BSD License; see LICENSE file for
 # more details.
 
-"""Clustering application."""
+"""Author disambiguation -- Clustering.
+
+See README.rst for further details.
+
+.. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. codeauthor:: Mateusz Susik <mateusz.susik@cern.ch>
+
+"""
 
 import argparse
 import cPickle
@@ -15,7 +22,6 @@ import functools
 import json
 import numpy as np
 
-from scipy.spatial.distance import squareform
 from sklearn.cross_validation import train_test_split
 
 # These imports are used during unpickling.
@@ -38,7 +44,6 @@ from beard.clustering import BlockClustering
 from beard.clustering import block_last_name_first_initial
 from beard.clustering import ScipyHierarchicalClustering
 from beard.metrics import b3_f_score
-from beard.metrics import silhouette_score
 
 
 def _affinity(distance_estimator, X, step=10000):
@@ -66,12 +71,12 @@ def clustering(input_signatures, input_records, distance_model,
                verbose=1, n_jobs=-1, clustering_method="average",
                clustering_random_state=42, clustering_test_size=None,
                clustering_threshold=None):
-    """Cluster the signatures using the pretrained distance model.
+    """Cluster signatures using a pretrained distance model.
 
     Parameters
     ----------
     :param input_signatures: string
-        Path to the file with signatures. The content should be a json array
+        Path to the file with signatures. The content should be a JSON array
         of dictionaries holding metadata about signatures.
 
         [{"signature_id": 0,
@@ -79,7 +84,7 @@ def clustering(input_signatures, input_records, distance_model,
           "publication_id": 10, ...}, { ... }, ...]
 
     :param input_records: string
-        Path to the file with records. The content should be a json array of
+        Path to the file with records. The content should be a JSON array of
         dictionaries holding metadata about records
 
         [{"publication_id": 0,
@@ -87,7 +92,7 @@ def clustering(input_signatures, input_records, distance_model,
 
     :param distance_model: string
         Path to the file with the distance model. The file should be a cPickle
-        created by ``beard.
+        created using the ``distance.py`` script.
 
     :param input_clusters: string
         Path to the file with knownn clusters. The file should be a dictionary,
@@ -99,7 +104,7 @@ def clustering(input_signatures, input_records, distance_model,
 
     :param output_clusters: string
         Path to the file with output cluster. The file will be filled with
-        clusters with the same format as ``input_clusters``
+        clusters, using the same format as ``input_clusters``.
 
     :param verbose: int
         If not zero, function will output scores on stdout.
@@ -163,7 +168,6 @@ def clustering(input_signatures, input_records, distance_model,
             threshold=clustering_threshold,
             method=clustering_method,
             supervised_scoring=b3_f_score,
-            # unsupervised_scoring=silhouette_score,
             scoring_data="affinity"),
         verbose=verbose,
         n_jobs=n_jobs).fit(X, y)
@@ -195,7 +199,7 @@ def clustering(input_signatures, input_records, distance_model,
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=usage)
+    parser = argparse.ArgumentParser()
     parser.add_argument("--distance_model", default=None, type=str)
     parser.add_argument("--input_signatures", default=None, type=str)
     parser.add_argument("--input_records", default=None, type=str)
@@ -207,7 +211,6 @@ if __name__ == "__main__":
     parser.add_argument("--clustering_random_state", default=42, type=int)
     parser.add_argument("--verbose", default=1, type=int)
     parser.add_argument("--n_jobs", default=-1, type=int)
-
     args = parser.parse_args()
 
     clustering(args.input_signatures, args.input_records, args.distance_model,
