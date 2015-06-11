@@ -200,11 +200,11 @@ def clustering(input_signatures, input_records, distance_model,
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--distance_model", default=None, type=str)
-    parser.add_argument("--input_signatures", default=None, type=str)
-    parser.add_argument("--input_records", default=None, type=str)
-    parser.add_argument("--input_clusters", default=None, type=str)
-    parser.add_argument("--output_clusters", default=None, type=str)
+    parser.add_argument("--distance_model", required=True, type=str)
+    parser.add_argument("--input_signatures", required=True, type=str)
+    parser.add_argument("--input_records", required=True, type=str)
+    parser.add_argument("--input_clusters", required=True, type=str)
+    parser.add_argument("--output_clusters", required=True, type=str)
     parser.add_argument("--clustering_method", default="average", type=str)
     parser.add_argument("--clustering_threshold", default=None, type=float)
     parser.add_argument("--clustering_test_size", default=None, type=float)

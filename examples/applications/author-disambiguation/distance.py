@@ -234,10 +234,10 @@ def learn_model(distance_pairs, input_signatures, input_records,
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--distance_pairs", default=None, type=str)
-    parser.add_argument("--distance_model", default=None, type=str)
-    parser.add_argument("--input_signatures", default=None, type=str)
-    parser.add_argument("--input_records", default=None, type=str)
+    parser.add_argument("--distance_pairs", required=True, type=str)
+    parser.add_argument("--distance_model", required=True,  type=str)
+    parser.add_argument("--input_signatures", required=True,  type=str)
+    parser.add_argument("--input_records", required=True, type=str)
     parser.add_argument("--verbose", default=1, type=int)
     args = parser.parse_args()
 
