@@ -17,8 +17,7 @@ See README.rst for further details.
 """
 
 import argparse
-import cPickle
-import functools
+import pickle
 import json
 import numpy as np
 
@@ -49,6 +48,7 @@ from beard.metrics import b3_f_score
 def _affinity(X, step=10000):
     """Custom affinity function, using a pre-learned distance estimator."""
     # Assumes that 'distance_estimator' lives in global, making things fast
+    global distance_estimator
 
     all_i, all_j = np.triu_indices(len(X), k=1)
     n_pairs = len(all_i)
@@ -93,7 +93,7 @@ def clustering(input_signatures, input_records, distance_model,
           "title": "Author disambiguation using Beard", ... }, { ... }, ...]
 
     :param distance_model: string
-        Path to the file with the distance model. The file should be a cPickle
+        Path to the file with the distance model. The file should be a pickle
         created using the ``distance.py`` script.
 
     :param input_clusters: string
@@ -128,7 +128,10 @@ def clustering(input_signatures, input_records, distance_model,
         Threshold passed to ``ScipyHierarchicalClustering``.
 
     """
-    distance_estimator = cPickle.load(open(distance_model, "r"))
+    # Assumes that 'distance_estimator' lives in global, making things fast
+    global distance_estimator
+
+    distance_estimator = pickle.load(open(distance_model, "rb"))
     signatures, records = load_signatures(input_signatures,
                                           input_records)
 
