@@ -21,9 +21,11 @@ def memoize(func):
     cache = {}
 
     @wraps(func)
-    def wrap(*args):
-        if args not in cache:
-            cache[args] = func(*args)
-        return cache[args]
+    def wrap(*args, **kwargs):
+
+        frozen = frozenset(kwargs.items())
+        if (args, frozen) not in cache:
+            cache[(args, frozen)] = func(*args, **kwargs)
+        return cache[(args, frozen)]
 
     return wrap
