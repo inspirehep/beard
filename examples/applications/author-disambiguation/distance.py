@@ -17,7 +17,7 @@ See README.rst for further details.
 """
 
 import argparse
-import cPickle
+import pickle
 import json
 import numpy as np
 
@@ -212,7 +212,7 @@ def learn_model(distance_pairs, input_signatures, input_records,
           "title": "Author disambiguation using Beard", ... }, { ... }, ...]
 
     :param distance_model: string
-        Path to the file with the distance model. The file should be cPickled.
+        Path to the file with the distance model. The file should be pickled.
     """
     pairs = json.load(open(distance_pairs, "r"))
     signatures, records = load_signatures(input_signatures, input_records)
@@ -227,9 +227,9 @@ def learn_model(distance_pairs, input_signatures, input_records,
 
     # Learn a distance estimator on paired signatures
     distance_estimator = _build_distance_estimator(X, y, verbose=verbose)
-    cPickle.dump(distance_estimator,
-                 open(distance_model, "w"),
-                 protocol=cPickle.HIGHEST_PROTOCOL)
+    pickle.dump(distance_estimator,
+                open(distance_model, "wb"),
+                protocol=pickle.HIGHEST_PROTOCOL)
 
 
 if __name__ == "__main__":
