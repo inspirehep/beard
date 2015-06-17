@@ -197,6 +197,40 @@ def get_coauthors(s):
     return v
 
 
+def get_coauthors_from_range(s, range=10):
+    """Get coauthors from the signature.
+
+    Only the signatures from the range-neighbourhood of the given signature
+    will be selected. Signatures on the paper are ordered (although they don't
+    have to be sorted!), and the distance between signatures is defined
+    as absolute difference of the indices.
+
+    The function was introduced due to the high memory usage of
+    a simple version.
+
+    Parameters
+    ----------
+    :param s: dict
+        Signature
+    :param range: integer
+        The maximum distance for the signatures between the author and his
+        coauthor.
+
+    Returns
+    -------
+    :returns: string
+        Coauthors ids separated by a space
+    """
+    v = s["publication"]["authors"]
+    try:
+        index = v.index(s["author_name"])
+        v = " ".join(v[max(0, index-range):min(len(v), index+range)])
+        return v
+    except ValueError:
+        v = " ".join(v)
+        return v
+
+
 def get_keywords(s):
     """Get keywords from the signature.
 

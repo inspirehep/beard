@@ -31,7 +31,7 @@ from utils import get_author_affiliation
 from utils import get_title
 from utils import get_journal
 from utils import get_abstract
-from utils import get_coauthors
+from utils import get_coauthors_from_range
 from utils import get_keywords
 from utils import get_collaborations
 from utils import get_references
