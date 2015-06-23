@@ -187,7 +187,7 @@ def paired_precision_recall_fscore(labels_true, labels_pred):
     Precision is the ability not to label as positive a sample
     that is negative. The best value is 1 and the worst is 0.
 
-    Recall is the ability to succesfully find all the positive samples.
+    Recall is the ability to successfully find all the positive samples.
     The best value is 1 and the worst is 0.
 
     F-score (Harmonic mean) can be thought as a weighted harmonic mean of
