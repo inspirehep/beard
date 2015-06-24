@@ -10,6 +10,7 @@
 """Transformers for paired data.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. codeauthor:: Hussein Al-Natsheh <hussein.al.natsheh@cern.ch>
 
 """
 from __future__ import division
@@ -227,6 +228,109 @@ class CosineSimilarity(BaseEstimator, TransformerMixin):
             Xt[denominator == 0.0] = 0.0
 
         return Xt.reshape((n_samples, 1))
+
+
+class EstimatorTransformer(TransformerMixin):
+
+    """Wrap an estimator decision_function as a transform method."""
+
+    def __init__(self, estimator):
+        """Initialize with the feature estimator.
+
+        Parameters
+        ----------
+        :param estimator: estimator trained on paired data.
+
+        Returns
+        -------
+        :returns: self
+        """
+        self.estimator = estimator
+
+    def fit(self, X, y=None):
+        """(Do nothing).
+
+        Parameters
+        ----------
+        :param X: array-like, shape (n_samples, n_features)
+            Input data.
+
+        Returns
+        -------
+        :returns: self
+        """
+        return self
+
+    def transform(self, X, y=None):
+        """Compute estimated feature(s) for all pairs of elements in ``X``.
+
+        Rows i in ``X`` are assumed to represent pairs, where
+        ``X[i, :n_features]`` and ``X[i, n_features:]`` correspond to their two
+        individual elements. Calling ``transform`` computes the the estimated
+        ethnicity arrays of these elements, i.e. that ``Xt[i]`` is the
+        estimated feature array, could be one, where each array element
+        represent an estimated feature
+        ``X[i, :n_features]`` and ``X[i, n_features:]``.
+
+        Parameters
+        ----------
+        :param X: array-like, shape (n_samples, 2 * n_features)
+            Input paired data.
+
+        Returns
+        -------
+        :returns Xt: array-like, shape (n_samples, 2 * n_features_prime)
+            The transformed data.
+        """
+        Xt = self.estimator.decision_function(X)
+        return Xt
+
+
+class ElementMultiplication(TransformerMixin):
+
+    """Element-wise multiplication on paired data."""
+
+    def fit(self, X, y=None):
+        """(Do nothing).
+
+        Parameters
+        ----------
+        :param X: array-like, shape (n_samples, n_features)
+            Input data.
+
+        Returns
+        -------
+        :returns: self
+        """
+        return self
+
+    def transform(self, X):
+        """Compute the element-wise multiplication for all pairs of elements in ``X``.
+
+        Rows i in ``X`` are assumed to represent pairs, where
+        ``X[i, :n_features]`` and ``X[i, n_features:]`` correspond to their
+        two individual elements. Calling ``transform`` computes the element
+        multiplication between these arrays.
+
+        Parameters
+        ----------
+        :param X: array-like, shape (n_samples, 2 * n_features)
+            Input paired data.
+
+        Returns
+        -------
+        :returns Xt: array-like, shape (n_samples, 2 * n_features_prime)
+            The transformed data.
+        """
+        n_samples, n_features_all = X.shape
+        n_features = n_features_all // 2
+
+        X1 = X[:, :n_features]
+        X2 = X[:, n_features:]
+
+        Xt = np.multiply(X1, X2)
+
+        return Xt
 
 
 class AbsoluteDifference(BaseEstimator, TransformerMixin):

@@ -10,6 +10,7 @@
 """Tests of transformers for paired data.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
+.. codeauthor:: Hussein AL-NATSHEH <hussein.al.natsheh@cern.ch>
 
 """
 
@@ -20,11 +21,16 @@ import scipy.sparse as sp
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler
+from sklearn.cross_validation import train_test_split
+from sklearn.datasets import load_iris
+from sklearn.svm import LinearSVC
 
 from beard.similarity import PairTransformer
 from beard.similarity import CosineSimilarity
 from beard.similarity import AbsoluteDifference
 from beard.similarity import JaccardSimilarity
+from beard.similarity import EstimatorTransformer
+from beard.similarity import ElementMultiplication
 from beard.utils import FuncTransformer
 
 
@@ -114,3 +120,34 @@ def test_JaccardSimilarity():
 
     Xt = JaccardSimilarity().fit_transform(sp.csr_matrix(X))
     assert_array_almost_equal(Xt, [[0.], [0.], [0.], [0.]])
+
+
+def test_EstimatorTransformer():
+    """Test for EstimatorTransformer."""
+    data = load_iris()
+    train, test = train_test_split(np.arange(len(data.data)),
+                                   test_size=0.08, random_state=42)
+    X_train = data.data[train]
+    y_train = data.target[train]
+    X_test = data.data[test]
+
+    clf = LinearSVC().fit(X_train, y_train)
+
+    y_predict = clf.decision_function(X_test)
+
+    Xt = EstimatorTransformer(clf).fit_transform(X_test)
+    assert_array_almost_equal(Xt, y_predict)
+
+
+def test_ElementMultiplication():
+    """Test for ElementMultiplication."""
+    X = np.array([[1.0, 1.0, 1.0, 2.0],
+                  [0.5, 1.0, 1.0, 0.5],
+                  [2.5, 0.2, 10.0, 2.0]])
+
+    y = np.array([[1.0, 2.0],
+                  [0.5, 0.5],
+                  [25.0, 0.4]])
+
+    Xt = ElementMultiplication().fit_transform(X)
+    assert_array_almost_equal(Xt, y)
