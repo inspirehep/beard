@@ -62,10 +62,6 @@ class _Block:
         """
         self._content = {surnames: {given_names: 1}}
 
-        # Note that in case where the cluster is created from a tuple of tokens
-        # with multiple surnames, this signature will be counted to
-        # _single_surname_signatures. This way we can omit dividing by 0.
-        self._single_surname_signatures = 1
         self._name = surnames[-1]
 
     def add_signature(self, surnames, given_names):
@@ -85,9 +81,6 @@ class _Block:
                 self._content[surnames][given_names] = 1
         else:
             self._content[surnames] = {given_names: 1}
-
-        if len(surnames) == 1:
-            self._single_surname_signatures += 1
 
     def compare_tokens_from_last(self, first_surnames, last_surname):
         """Check if a part of the surname matches with given names in block.
@@ -150,114 +143,6 @@ class _Block:
         """
         return surnames in self._content
 
-    # The bonus used in given_names_score. If there is a full name match
-    # between signatures, this signature is counted FULL_NAME_MATCH_BONUS
-    # times.
-    FULL_NAME_MATCH_BONUS = 10
-
-    def given_names_score(self, new_given_names, last_surname):
-        """Count matches among the initials.
-
-        A match is defined as match of all the given names from the new
-        signature with the some of the names from the old signature.
-
-        Such a match needs to keep order. For example ("A", "S") will match
-        ("A", "D", "S"), but won't match ("S", "A", "D").
-
-        In case of full given names available the match considers:
-        + Full name match if both compared element are full names. Such a match
-        is counted FULL_NAME_MATCH_BONUS times to the result, as it indicates
-        the same author with bigger probability.
-        + Initials match if none of compared elements is a full name.
-        + Initials match if one od the compared elements is a full name.
-
-        Two characters in initials - ``A`` and ``H`` are handled in special
-        way in initial comparison, as the double metaphone can output an empty
-        string for them.
-
-        Parameters
-        ----------
-        :param new_given_names: tuple
-            Strings representing given names of the new author
-        :param last_surname: tuple
-            Tokens, usually one, representing last surname(s) of the author.
-
-        Raises
-        ------
-        :raises: KeyError
-            When the last surname is not included in the cluster
-
-        Returns
-        -------
-        :returns: integer
-            Score for matching given names in the cluster.
-        """
-        result = 0.0
-        if last_surname in self._content:
-            for given_names, occurences in \
-                    six.iteritems(self._content[last_surname]):
-                given_names_length = len(given_names)
-                old_names_index = 0
-                names_match = self.FULL_NAME_MATCH_BONUS
-                for new_name in new_given_names:
-                    while old_names_index < given_names_length:
-                        full_names_match = \
-                            self._names_match(given_names[old_names_index],
-                                              new_name)
-                        if not full_names_match:
-                            # There was no match, check next name from the
-                            # old signature
-                            old_names_index += 1
-                        else:
-                            if names_match:
-                                names_match = full_names_match
-                            # Go to the next name from the new ones.
-                            break
-                    if old_names_index == given_names_length:
-                        # No match.
-                        names_match = 0
-                        break
-                if names_match:
-                    result += occurences * names_match * len(new_given_names) \
-                        / float(len(given_names))
-            return result
-        self._raise_keyerror(last_surname)
-
-    def single_surname_signatures(self):
-        """Return the number of signatures with only one surname.
-
-        The only exception is that when the block was created by a
-        signature which consisted of more than one surname, the result will
-        be increased by one, so that the result can be used as a denominator.
-
-        Returns
-        -------
-        :returns: integer
-            Number of signatures with only one surname or 1 if there are no
-            such.
-        """
-        return self._single_surname_signatures
-
-    def _names_match(self, name1, name2):
-
-        if name1 == "" or name2 == "":
-            # Probably starting with "h" or "w"
-            if name1 != "":
-                name1, name2 = name2, name1
-            if name1 == name2:
-                return True
-            # Please not that names starting with "w" will result in strings
-            # starting from "A" as the results of the double metaphone
-            # algorithm.
-            return name2.startswith('H') or name2.startswith('A')
-
-        if len(name1) > 1 and len(name2) > 1:
-            # Full names
-            return self.FULL_NAME_MATCH_BONUS * (name1 == name2)
-
-        # Just check initials
-        return name1[0] == name2[0]
-
     def _raise_keyerror(self, key):
         raise KeyError("The cluster doesn't contain a key %s" % key)
 
@@ -307,22 +192,13 @@ def block_double_metaphone(X, threshold=1000):
     on some of the signatures, the new signature will be assigned to the block
     of the last surname.
 
-    Otherwise, the algorithm check how many signatures have the same given
-    names or initials for both considered blocks. The numbers are normalized
-    using sizes of the blocks and compared with each other. The new signature
-    is assigned to the block with bigger score.
+    Otherwise, the signature will be assigned to the block of
+    the first surname.
 
     To prevent creation of too big clusters, the ``threshold`` parameter can
     be set. The algorithm will split every block which size is bigger than
     ``threshold`` into smaller ones using given names initials as the
     condition.
-
-    The algorithm is order dependant, i.e. the order of signatures in the input
-    can change the result. It happens in the case where there are more than
-    one signatures with exactly the same combination of multiple surnames.
-    The first signature is assigned to a block which matches it in the best
-    way. Then, the rest of them are assigned to the same block without any
-    scores computed.
 
     Parameters
     ----------
@@ -410,7 +286,7 @@ def block_double_metaphone(X, threshold=1000):
                     blocks.append(cluster)
                     continue
 
-                # No match, compute heuristically the match over initials
+                # # No match, compute heuristically the match over initials
 
                 # Firstly, check if some of the surnames were used as the
                 # last given names on some of the signatures.
@@ -432,36 +308,15 @@ def block_double_metaphone(X, threshold=1000):
                     blocks.append(cluster)
                     continue
 
-                # Second case is when the first surname is dropped.
-                # A good example might be a woman who took her husband's
-                # surname as the first one. Check how many names in the block
-                # are the same. The score will be compared with a similar
-                # approach for the other block.
-                last_metaphone_score = \
-                    cluster.given_names_score(given_names, (surnames[-1],)) / \
-                    float(cluster.single_surname_signatures())
-
             except KeyError:
                 # No such block
                 pass
 
             try:
-                # First surname one more time
-
+                # No match with last surname. Match with the first one.
                 cluster = id_to_block[surnames[0]]
-
-                # Check the case when the last surname is dropped.
-                first_metaphone_score = 3 * \
-                    cluster.given_names_score(given_names, (surnames[0],)) / \
-                    float(cluster.single_surname_signatures())
-
-                # Decide where the new signature should be assigned.
-                if last_metaphone_score > first_metaphone_score:
-                    id_to_block[surnames[-1]].add_signature(*tokens)
-                    blocks.append(id_to_block[surnames[-1]])
-                else:
-                    cluster.add_signature(*tokens)
-                    blocks.append(cluster)
+                cluster.add_signature(*tokens)
+                blocks.append(cluster)
 
                 continue
 
@@ -469,7 +324,7 @@ def block_double_metaphone(X, threshold=1000):
                 # No such block
                 pass
 
-            # No block for the first surname and no perfect match for the
+            # No block for the first surname and no good match for the
             # last surname.
             if surnames[-1] not in id_to_block:
                 # Create new block.
