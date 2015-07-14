@@ -16,6 +16,7 @@
 import numpy as np
 
 from beard.clustering.blocking_funcs import block_double_metaphone
+from beard.clustering.blocking_funcs import block_last_name_first_initial
 
 
 def run_blocking(names, expected_results, threshold=100):
@@ -38,10 +39,9 @@ def test_first_surname_included():
 
 
 def test_last_surname_included():
-    """Check last surname full match and match by token."""
-    run_blocking(['Jones-Smith, Joe', 'Smith, Joe',
-                  'Jones, Paul', 'Jones-Smith, Paul'],
-                 ['SM0', 'SM0', 'JNS', 'SM0'])
+    """Check last surname full match."""
+    run_blocking(['Jones-Smith, Joe', 'Smith, Joe', 'Jones-Smith, Paul'],
+                 ['SM0', 'SM0', 'SM0'])
 
 
 def test_no_suitable_block_for_multiple_surnames():
@@ -59,3 +59,12 @@ def test_compare_tokens_from_last_usage():
     """Check if the surnames are compared to the first_names."""
     run_blocking(['Jones, Joe', 'Smith, Joe Jones', 'Jones, Joe',
                   'Jones-Smith, Joe'], ['JNS', 'SM0', 'JNS', 'SM0'])
+
+
+def test_block_last_name_first_initial():
+    """Block using LNFI strategy."""
+    names = ['Smith, Jonh', 'Smith, James', 'Smith, Peter', 'Smit, John']
+    sigs = np.array([[{'author_name': sig}] for sig in names])
+    lnfi_blocking = block_last_name_first_initial(sigs)
+    assert lnfi_blocking.tolist() == ['smith j', 'smith j',
+                                      'smith p', 'smit j']
