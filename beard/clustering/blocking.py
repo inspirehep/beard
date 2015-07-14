@@ -16,10 +16,8 @@
 
 from __future__ import print_function
 
+import multiprocessing as mp
 import numpy as np
-
-from joblib import delayed
-from joblib import Parallel
 
 from sklearn.base import BaseEstimator
 from sklearn.base import clone
@@ -42,23 +40,49 @@ class _SingleClustering(BaseEstimator, ClusterMixin):
         return block_single(X)
 
 
-def _parallel_fit(fit_, partial_fit_, b, X, y, clusterer, verbose):
+def _parallel_fit(fit_, partial_fit_, estimator, verbose, data_queue,
+                  result_queue):
     """Run clusterer's fit function."""
-    if verbose > 1:
-        print("Clustering %d samples on block '%s'..." % (len(X), b))
+    # Status can be one of: 'middle', 'end'
+    # 'middle' means that there is a block to compute and the process should
+    # continue
+    # 'end' means that the process should finish as all the data was sent
+    # by the main process
+    status, block, existing_clusterer = data_queue.get()
 
-    if fit_ or not hasattr(clusterer, "partial_fit"):
-        try:
-            clusterer.fit(X, y=y)
-        except TypeError:
-            clusterer.fit(X)
-    elif partial_fit_:
-        try:
-            clusterer.partial_fit(X, y=y)
-        except TypeError:
-            clusterer.partial_fit(X)
+    if status == 'end':
+        # Special case where there are more processes than blocks
+        result_queue.put((None, None))
 
-    return (b, clusterer)
+    while status != 'end':
+
+        b, X, y = block
+
+        if len(X) == 1:
+            clusterer = _SingleClustering()
+        elif existing_clusterer and partial_fit_ and not fit_:
+            clusterer = existing_clusterer
+        else:
+            clusterer = clone(estimator)
+
+        if verbose > 1:
+            print("Clustering %d samples on block '%s'..." % (len(X), b))
+
+        if fit_ or not hasattr(clusterer, "partial_fit"):
+            try:
+                clusterer.fit(X, y=y)
+            except TypeError:
+                clusterer.fit(X)
+        elif partial_fit_:
+            try:
+                clusterer.partial_fit(X, y=y)
+            except TypeError:
+                clusterer.partial_fit(X)
+
+        result_queue.put((b, clusterer))
+        status, block, existing_clusterer = data_queue.get()
+
+    return
 
 
 class BlockClustering(BaseEstimator, ClusterMixin):
@@ -106,7 +130,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
             Verbosity of the fitting procedure.
 
         :param n_jobs: int
-            Parameter passed directly to joblib library.
+            Number of processes to use.
         """
         self.affinity = affinity
         self.blocking = blocking
@@ -159,33 +183,52 @@ class BlockClustering(BaseEstimator, ClusterMixin):
             if self.affinity == "precomputed":
                 X_mask = X_mask[:, mask]
 
-            # Select a clusterer
-            if len(X_mask) == 1:
-                clusterer = _SingleClustering()
-            elif self.fit_:
-                # Although every job has its own copy of the estimator, one job
-                # can serve multiple fits. That's why the clone is needed.
-                clusterer = clone(self.base_estimator)
-            elif self.partial_fit_:
-                if b in self.clusterers_:
-                    clusterer = self.clusterers_[b]
-                else:
-                    clusterer = clone(self.base_estimator)
-
-            yield (b, X_mask, y_mask, clusterer)
+            yield (b, X_mask, y_mask)
 
     def _fit(self, X, y, blocks):
         """Fit base clustering estimators on X."""
         self.blocks_ = blocks
 
-        results = (Parallel(n_jobs=self.n_jobs, verbose=self.verbose)
-                   (delayed(_parallel_fit)(self.fit_, self.partial_fit_,
-                                           b, X_mask, y_mask, clusterer,
-                                           self.verbose) for
-                   b, X_mask, y_mask, clusterer in self._blocks(X, y, blocks)))
+        processes = []
+        # Here the blocks will be passed to subprocesses
+        data_queue = mp.Queue()
+        # Here the results will be passed back
+        result_queue = mp.Queue()
+        for x in range(self.n_jobs):
+            processes.append(mp.Process(target=_parallel_fit, args=(self.fit_,
+                             self.partial_fit_, self.base_estimator,
+                             self.verbose, data_queue, result_queue)))
+            processes[-1].start()
 
-        for b, clusterer in results:
-            self.clusterers_[b] = clusterer
+        # First n_jobs blocks are sent into the queue without waiting for the
+        # results. This variable is a counter that takes care of this.
+        presend = 0
+        blocks_computed = 0
+
+        for block in self._blocks(X, y, blocks):
+            if presend >= self.n_jobs:
+                b, clusterer = result_queue.get()
+                blocks_computed += 1
+                if clusterer:
+                    self.clusterers_[b] = clusterer
+            else:
+                presend += 1
+            if self.partial_fit_:
+                if block[0] in self.clusterers_:
+                    data_queue.put(('middle', block, self.clusterers_[b]))
+                    continue
+            data_queue.put(('middle', block, None))
+
+        # Get the last results and tell the subprocesses to finish
+        for x in range(self.n_jobs):
+            if blocks_computed < len(blocks):
+                b, clusterer = result_queue.get()
+                blocks_computed += 1
+                if clusterer:
+                    self.clusterers_[b] = clusterer
+            # Send a message which tells the subprocess that no more data is
+            # available.
+            data_queue.put(('end', None, None))
 
         return self
 

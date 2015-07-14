@@ -83,7 +83,6 @@ _keywords = [
 ]
 
 _install_requires = [
-    "joblib>=0.8.4",
     "numpy>=1.9",
     "scikit-learn>=0.15.2",
     "scipy>=0.14",

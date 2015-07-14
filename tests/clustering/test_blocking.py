@@ -117,6 +117,7 @@ def test_partial_fit():
 
 
 def test_onthefly_labels():
+    """Test assigning labels on the fly."""
     clusterer = BlockClustering(
         base_estimator=ScipyHierarchicalClustering(n_clusters=1,
                                                    method="complete"))
@@ -136,6 +137,15 @@ def test_predict():
 
     pred = clusterer.predict(X, blocks=10 * np.ones(len(X)))
     assert_array_equal(-np.ones(len(X)), pred)
+
+
+@mark.parametrize('n_jobs', (1, 2))
+def test_single_signature(n_jobs):
+    """Test clustering of a  single signature."""
+    import numbers
+    clusterer = BlockClustering(base_estimator=MiniBatchKMeans(n_clusters=2))
+    clusterer.fit(np.array([X[0]]))
+    assert isinstance(clusterer.predict(X[0])[0], numbers.Integral)
 
 
 def test_validation():
