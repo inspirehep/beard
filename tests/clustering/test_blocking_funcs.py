@@ -37,13 +37,6 @@ def test_first_surname_included():
                  ['SM0', 'SM0', 'JNS', 'SM0'])
 
 
-def test_last_surname_included():
-    """Check last surname full match and match by token."""
-    run_blocking(['Jones-Smith, Joe', 'Smith, Joe',
-                  'Jones, Paul', 'Jones-Smith, Paul'],
-                 ['SM0', 'SM0', 'JNS', 'SM0'])
-
-
 def test_no_suitable_block_for_multiple_surnames():
     """Check if a block is created for surnames that don't match."""
     run_blocking(['Jones-Smith, Joe'], ['SM0'])
