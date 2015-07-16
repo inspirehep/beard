@@ -82,6 +82,7 @@ def _parallel_fit(fit_, partial_fit_, estimator, verbose, data_queue,
         result_queue.put((b, clusterer))
         status, block, existing_clusterer = data_queue.get()
 
+    data_queue.put(('end', None, None))
     return
 
 
@@ -219,6 +220,8 @@ class BlockClustering(BaseEstimator, ClusterMixin):
                     continue
             data_queue.put(('middle', block, None))
 
+        data_queue.put(('end', None, None))
+
         # Get the last results and tell the subprocesses to finish
         for x in range(self.n_jobs):
             if blocks_computed < len(blocks):
@@ -226,9 +229,6 @@ class BlockClustering(BaseEstimator, ClusterMixin):
                 blocks_computed += 1
                 if clusterer:
                     self.clusterers_[b] = clusterer
-            # Send a message which tells the subprocess that no more data is
-            # available.
-            data_queue.put(('end', None, None))
 
         return self
 
