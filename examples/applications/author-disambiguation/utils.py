@@ -341,25 +341,6 @@ def get_collaborations(s):
     return v
 
 
-def get_references(s):
-    """Get references from the signature.
-
-    Parameters
-    ----------
-    :param s: dict
-        Signature
-
-    Returns
-    -------
-    :returns: string
-        Ids of references separated by a space
-    """
-    v = s["publication"]["references"]
-    v = " ".join(str(r) for r in v)
-    v = v if v else ""
-    return v
-
-
 def get_year(s):
     """Get year from the signature.
 
