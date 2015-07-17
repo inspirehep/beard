@@ -13,6 +13,7 @@ See README.rst for further details.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
 .. codeauthor:: Mateusz Susik <mateusz.susik@cern.ch>
+.. codeauthor:: Hussein AL-NATSHEH <hussein.al.natsheh@cern.ch>
 
 """
 
@@ -20,6 +21,7 @@ import argparse
 import pickle
 import json
 import numpy as np
+from scipy.special import expit
 
 from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.feature_extraction.text import CountVectorizer
@@ -50,6 +52,8 @@ from beard.similarity import AbsoluteDifference
 from beard.similarity import CosineSimilarity
 from beard.similarity import PairTransformer
 from beard.similarity import StringDistance
+from beard.similarity import EstimatorTransformer
+from beard.similarity import ElementMultiplication
 from beard.utils import FuncTransformer
 from beard.utils import Shaper
 
@@ -184,6 +188,14 @@ def _build_distance_estimator(X, y, verbose=0):
                                           decode_error="replace")),
            ]), groupby=group_by_signature)),
            ("combiner", CosineSimilarity())
+        ("author_ethnicity", Pipeline([
+            ("pairs", PairTransformer(element_transformer=Pipeline([
+                ("name", FuncTransformer(func=get_author_full_name)),
+                ("shaper", Shaper(newshape=(-1,))),
+                ("classifier", EstimatorTransformer(race_estimator)),
+            ]))),
+            ("sigmoid", FuncTransformer(func=expit)),
+            ("combiner", ElementMultiplication())
         ])),
         ("year_diff", Pipeline([
             ("pairs", FuncTransformer(func=get_year, dtype=np.int)),
@@ -260,8 +272,12 @@ if __name__ == "__main__":
     parser.add_argument("--distance_model", required=True,  type=str)
     parser.add_argument("--input_signatures", required=True,  type=str)
     parser.add_argument("--input_records", required=True, type=str)
+    parser.add_argument("--input_race_estimator", required=False, type=str),
     parser.add_argument("--verbose", default=1, type=int)
     args = parser.parse_args()
+
+    if args.input_race_estimator:
+        race_estimator = pickle.load(open(args.input_race_estimator, "r"))
 
     learn_model(args.distance_pairs, args.input_signatures, args.input_records,
                 args.distance_model, args.verbose)
