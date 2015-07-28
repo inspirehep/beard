@@ -184,7 +184,7 @@ def clustering(input_signatures, input_records, distance_model,
 
         for label in np.unique(labels):
             mask = (labels == label)
-            clusters[label] = [r[0]["signature_id"] for r in X[mask]]
+            clusters[str(label)] = [r[0]["signature_id"] for r in X[mask]]
 
         json.dump(clusters, open(output_clusters, "w"))
 
