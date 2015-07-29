@@ -205,6 +205,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
         # results. This variable is a counter that takes care of this.
         presend = 0
         blocks_computed = 0
+        blocks_all = len(np.unique(blocks))
 
         for block in self._blocks(X, y, blocks):
             if presend >= self.n_jobs:
@@ -224,7 +225,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
 
         # Get the last results and tell the subprocesses to finish
         for x in range(self.n_jobs):
-            if blocks_computed < len(blocks):
+            if blocks_computed < blocks_all:
                 b, clusterer = result_queue.get()
                 blocks_computed += 1
                 if clusterer:
