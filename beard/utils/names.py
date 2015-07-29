@@ -22,24 +22,61 @@ from ..ext.metaphone import dm
 from .misc import memoize
 from .strings import asciify
 
-RE_NORMALIZE_LAST_NAME = re.compile("\s+|\-")
+RE_NORMALIZE_WHOLE_NAME = re.compile("[^a-zA-Z,\s]+")
 RE_NORMALIZE_OTHER_NAMES = re.compile("(,\s(i{1,3}|iv|v|vi|jr))|[\.'\-,\s]+")
+RE_APOSTROPHES = re.compile('\'+')
+RE_REMOVE_NON_CHARACTERS = re.compile('[^a-zA-Z\',\s]+')
+DROPPED_AFFIXES = {'a', 'ab', 'am', 'ap', 'abu', 'al', 'auf', 'aus', 'bar',
+                   'bath', 'bat', 'ben', 'bet', 'bin', 'bint', 'd', 'da',
+                   'dall', 'dalla', 'das', 'de', 'degli', 'del', 'dell',
+                   'della', 'dem', 'den', 'der', 'di', 'do', 'dos', 'ds', 'du',
+                   'e', 'el', 'i', 'ibn', 'im', 'jr', 'l', 'la', 'las', 'le',
+                   'los', 'm', 'mac', 'mc', 'mhic', 'mic', 'o', 'ter', 'und',
+                   'v', 'van', 'vom', 'von', 'zu', 'zum', 'zur'}
 
 
 @memoize
-def normalize_name(name):
+def normalize_name(name, drop_common_affixes=True):
     """Normalize a personal name.
 
-    A personal name is assumed to be formatted as "Last Name, Other Names".
+    Parameters
+    ----------
+    :param name: string
+        Name, formatted as "Last Name, Other Names".
+
+    :param drop_common_affixes: boolean
+        If the affixes like ``della`` should be dropeed.
+
+    Returns
+    -------
+    :return: string
+        Normalized name, formatted as "lastnames first names" where last names
+        are joined and first names can be represented only by initials.
     """
     name = asciify(name).lower()
+    name = RE_NORMALIZE_WHOLE_NAME.sub(' ', name)
     names = name.split(",", 1)
+    if not names:
+        return ""
+    if len(names) == 1:
+        # There was no comma in the name
+        all_names = names[0].split(" ")
+        if len(all_names) > 1:
+            # The last string should be the surname
+            names = [all_names[-1], " ".join(all_names[:-1])]
+        else:
+            names = [all_names[0], ""]
 
-    if len(names) == 2:
-        name = "%s, %s" % (RE_NORMALIZE_LAST_NAME.sub("", names[0]), names[1])
+    if drop_common_affixes:
+        last_names = names[0].split(" ")
+        without_affixes = list(filter(lambda x: x not in DROPPED_AFFIXES,
+                               last_names))
+        if len(without_affixes) > 0:
+            names[0] = "".join(without_affixes)
     else:
-        name = names[0]  # Assume various other names only
+        names[0] = re.sub('\s', '', names[0])
 
+    name = "%s, %s" % (names[0], names[1])
     name = RE_NORMALIZE_OTHER_NAMES.sub(" ", name)
     name = name.strip()
 
@@ -50,16 +87,6 @@ def normalize_name(name):
 def name_initials(name):
     """Compute the set of initials of a given name."""
     return set([w[0] for w in name.split()])
-
-RE_APOSTROPHES = re.compile('\'+')
-RE_REMOVE_NON_CHARACTERS = re.compile('[^a-zA-Z\',\s]+')
-DROPPED_AFFIXES = {'a', 'ab', 'am', 'ap', 'abu', 'al', 'auf', 'aus', 'bar',
-                   'bath', 'bat', 'ben', 'bet', 'bin', 'bint', 'd', 'da',
-                   'dall', 'dalla', 'das', 'de', 'degli', 'del', 'dell',
-                   'della', 'dem', 'den', 'der', 'di', 'do', 'dos', 'ds', 'du',
-                   'e', 'el', 'i', 'ibn', 'im', 'jr', 'l', 'la', 'las', 'le',
-                   'los', 'm', 'mac', 'mc', 'mhic', 'mic', 'o', 'ter', 'und',
-                   'v', 'van', 'vom', 'von', 'zu', 'zum', 'zur'}
 
 
 @memoize

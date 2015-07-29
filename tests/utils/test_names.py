@@ -33,7 +33,7 @@ def test_normalize_name():
     assert normalize_name("Doe, J.") == "doe j"
     assert normalize_name("Doe, J") == "doe j"
     assert normalize_name("Doe-Foe, Willem") == "doefoe willem"
-    assert normalize_name("Doe-Foe Willem") == "doe foe willem"
+    assert normalize_name("Doe-Foe Willem") == "willem doe foe"
     assert normalize_name("Dupont, René") == "dupont rene"
     assert normalize_name("Dupont., René") == "dupont rene"
     assert normalize_name("Dupont, Jean-René") == "dupont jean rene"
@@ -43,6 +43,20 @@ def test_normalize_name():
     assert normalize_name("Dupont, J.-R.") == "dupont j r"
     assert normalize_name("Dupont") == "dupont"
     assert normalize_name("Dupont J.R.") == "dupont j r"
+    assert normalize_name("von und zu Hohenstein, F.") == "hohenstein f"
+    assert normalize_name("von und zu Hohenstein, F.",
+                          drop_common_affixes=False) == "vonundzuhohenstein f"
+    assert normalize_name("Jakub, Ibrahim ibn") == "jakub ibrahim ibn"
+    assert normalize_name("o'Neill, Jack") == "neill jack"
+    assert normalize_name("o'Neill, Jack",
+                          drop_common_affixes=False) == "oneill jack"
+    assert normalize_name("Ben, Robert") == "ben robert"
+    assert normalize_name("Robert, L. W") == "robert l w"
+    assert normalize_name("Mueller aus Auer, Peter") == \
+        "muellerauer peter"
+    assert normalize_name("Mueller aus Auer, Peter",
+                          drop_common_affixes=False) == \
+        "muellerausauer peter"
 
 
 def test_dm_tokenize_name_simple():
