@@ -207,7 +207,7 @@ if __name__ == "__main__":
     parser.add_argument("--distance_model", required=True, type=str)
     parser.add_argument("--input_signatures", required=True, type=str)
     parser.add_argument("--input_records", required=True, type=str)
-    parser.add_argument("--input_clusters", required=True, type=str)
+    parser.add_argument("--input_clusters", default=None, type=str)
     parser.add_argument("--output_clusters", required=True, type=str)
     parser.add_argument("--clustering_method", default="average", type=str)
     parser.add_argument("--clustering_threshold", default=None, type=float)
