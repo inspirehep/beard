@@ -50,10 +50,6 @@ def _parallel_fit(fit_, partial_fit_, estimator, verbose, data_queue,
     # by the main process
     status, block, existing_clusterer = data_queue.get()
 
-    if status == 'end':
-        # Special case where there are more processes than blocks
-        result_queue.put((None, None))
-
     while status != 'end':
 
         b, X, y = block
@@ -219,6 +215,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
                 if block[0] in self.clusterers_:
                     data_queue.put(('middle', block, self.clusterers_[b]))
                     continue
+
             data_queue.put(('middle', block, None))
 
         data_queue.put(('end', None, None))

@@ -14,6 +14,7 @@
 
 """
 
+import jellyfish
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 import scipy.sparse as sp
@@ -25,12 +26,13 @@ from sklearn.cross_validation import train_test_split
 from sklearn.datasets import load_iris
 from sklearn.svm import LinearSVC
 
-from beard.similarity import PairTransformer
-from beard.similarity import CosineSimilarity
 from beard.similarity import AbsoluteDifference
-from beard.similarity import JaccardSimilarity
-from beard.similarity import EstimatorTransformer
+from beard.similarity import CosineSimilarity
 from beard.similarity import ElementMultiplication
+from beard.similarity import EstimatorTransformer
+from beard.similarity import JaccardSimilarity
+from beard.similarity import PairTransformer
+from beard.similarity import StringDistance
 from beard.utils import FuncTransformer
 
 
@@ -94,6 +96,28 @@ def test_absolute_difference():
 
     Xt = AbsoluteDifference().fit_transform(sp.csr_matrix(X))
     assert_array_almost_equal(Xt, [[0, 0], [1, 1], [0, 0], [1, 1]])
+
+
+def test_CharacterEquality():
+    """Test for CharacterEquality."""
+    X = np.array([['q', 'q'],
+                  ['q', 'a'],
+                  ['q', ''],
+                  ['', ''],
+                  ['', 'q']])
+    Xt = StringDistance(similarity_function='character_equality').transform(X)
+    assert_array_almost_equal(Xt, [[1.], [0.], [0.], [0.5], [0.]])
+
+
+def test_StringDistance():
+    """Test for StringDistance."""
+    X = np.array([[u'this', u'that'],
+                  [u'that', u't'],
+                  [u't', u't'],
+                  [u't', u'this']])
+    Xt = StringDistance().transform(X)
+    assert_array_almost_equal(Xt, [[jellyfish.jaro_winkler(u'this', u'that')],
+                                   [-1.], [-1.], [-1.]])
 
 
 def test_JaccardSimilarity():

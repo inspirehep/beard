@@ -18,7 +18,7 @@ import six
 
 from beard.utils import normalize_name
 from beard.utils.names import dm_tokenize_name
-from beard.utils.names import first_name_initial
+from beard.utils.names import given_name_initial
 
 
 class _Block:
@@ -163,7 +163,7 @@ def _split_blocks(blocks, X, threshold):
         if id_to_size[block._name] > threshold:
 
             splitted_blocks.append(block._name +
-                                   first_name_initial(X[index
+                                   given_name_initial(X[index
                                                         ][0]['author_name']))
         else:
             splitted_blocks.append(block._name)
@@ -368,14 +368,13 @@ def block_last_name_first_initial(X):
         array is the same as in the ``X`` input parameter.
     """
     def last_name_first_initial(name):
-        names = name.split(",", 1)
+        names = normalize_name(name).split(" ", 1)
 
         try:
             name = "%s %s" % (names[0], names[1].strip()[0])
         except IndexError:
             name = names[0]
 
-        name = normalize_name(name)
         return name
 
     blocks = []

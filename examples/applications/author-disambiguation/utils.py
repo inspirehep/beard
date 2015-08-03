@@ -16,8 +16,10 @@
 
 import json
 
+from beard.utils import given_name
 from beard.utils import name_initials
 from beard.utils import normalize_name
+from beard.utils import given_name_initial
 
 
 def load_signatures(signatures_filename, records_filename):
@@ -67,6 +69,60 @@ def get_author_full_name(s):
     v = s["author_name"]
     v = normalize_name(v) if v else ""
     return v
+
+
+def get_first_given_name(s):
+    """Get author first given name from the signature.
+
+    Parameters
+    ----------
+    :param s: dict
+        Signature
+
+    Returns
+    -------
+    :returns: string
+        Author's first given name
+    """
+    v = given_name(s["author_name"], 0)
+    return v
+
+
+def get_second_given_name(s):
+    """Get author second given name from the signature.
+
+    Parameters
+    ----------
+    :param s: dict
+        Signature
+
+    Returns
+    -------
+    :returns: string
+        Author's second given name
+    """
+    v = given_name(s["author_name"], 1)
+    return v
+
+
+def get_second_initial(s):
+    """Get author second given name's initial from the signature.
+
+    Parameters
+    ----------
+    :param s: dict
+        Signature
+
+    Returns
+    -------
+    :returns: string
+        Second given name's initial. Empty string in case it's not available.
+    """
+    v = given_name_initial(s["author_name"], 1)
+    try:
+        return v
+    except IndexError:
+        return ""
 
 
 def get_author_other_names(s):
@@ -245,6 +301,24 @@ def get_keywords(s):
         Keywords separated by a space
     """
     v = s["publication"]["keywords"]
+    v = " ".join(v)
+    return v
+
+
+def get_topics(s):
+    """Get topics from the signature.
+
+    Parameters
+    ----------
+    :param s: dict
+        Signature
+
+    Returns
+    -------
+    :returns: string
+        Topics separated by a space
+    """
+    v = s["publication"]["topics"]
     v = " ".join(v)
     return v
 
