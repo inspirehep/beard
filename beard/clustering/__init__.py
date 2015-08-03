@@ -10,13 +10,13 @@
 """Clustering algorithms."""
 
 from .blocking import BlockClustering
-from .blocking_funcs import block_double_metaphone
+from .blocking_funcs import block_phonetic
 from .blocking_funcs import block_last_name_first_initial
 from .blocking_funcs import block_single
 from .wrappers import ScipyHierarchicalClustering
 
 __all__ = ("BlockClustering",
-           "block_double_metaphone",
+           "block_phonetic",
            "block_last_name_first_initial",
            "block_single",
            "ScipyHierarchicalClustering")

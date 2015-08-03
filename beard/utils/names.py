@@ -16,8 +16,7 @@
 
 import functools
 import re
-
-from ..ext.metaphone import dm
+import sys
 
 from .misc import memoize
 from .strings import asciify
@@ -90,7 +89,7 @@ def name_initials(name):
 
 
 @memoize
-def dm_tokenize_name(name):
+def phonetic_tokenize_name(name, phonetic_algorithm="double_metaphone"):
     """Create Double Metaphone tokens from the string.
 
      Parameters
@@ -98,6 +97,12 @@ def dm_tokenize_name(name):
     :param name: string
         Name of the author. Usually it should be in the format:
         surnames, first names.
+
+    :param phonetic algorithm: string
+        Which phonetic algorithm will be used. Options:
+        -  "double_metaphone"
+        -  "nysiis" (only for Python 2)
+        -  "soundex" (only for Python 2)
 
     Returns
     -------
@@ -107,11 +112,26 @@ def dm_tokenize_name(name):
         exactly two elements. Only the first results of the double metaphone
         algorithm are included in tuples.
     """
-    tokens = tokenize_name(name)
+    if sys.version[0] == '2':
+        import fuzzy
+        dm = fuzzy.DMetaphone()
+        soundex = fuzzy.Soundex(5)
+        phonetic_algorithms = {
+            "double_metaphone": lambda y: dm(y)[0] or '',
+            "nysiis": lambda y: fuzzy.nysiis(y),
+            "soundex": lambda y: soundex(y)
+        }
+    else:
+        from ..ext.metaphone import dm
+        phonetic_algorithms = {
+            "double_metaphone": lambda y: dm(y)[0]
+        }
 
+    tokens = tokenize_name(name)
     # Use double metaphone
-    tokens = tuple(map(lambda x: tuple(map(lambda y: dm(y)[0], x)),
-                   tokens))
+    tokens = tuple(map(lambda x: tuple(map(lambda y: phonetic_algorithms[
+        phonetic_algorithm](y), x)),
+        tokens))
 
     return tokens
 

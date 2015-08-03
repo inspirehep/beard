@@ -91,6 +91,10 @@ _install_requires = [
     "unidecode"
 ]
 
+if sys.version[0] == '2':
+    # fuzzy package is not available on Python 3
+    _install_requires.append("fuzzy")
+
 _tests_require = [
     "pytest",
     "pytest-cache>=1.0",

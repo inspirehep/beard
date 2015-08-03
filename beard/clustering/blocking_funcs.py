@@ -17,7 +17,7 @@ import numpy as np
 import six
 
 from beard.utils import normalize_name
-from beard.utils.names import dm_tokenize_name
+from beard.utils.names import phonetic_tokenize_name
 from beard.utils.names import given_name_initial
 
 
@@ -46,7 +46,7 @@ class _Block:
 
     From the example above, one can see that the block stores information
     about 5 signatures of 'JNS' 'SM0', 'PAL' 'JH'. Those strings are results
-    of the double metaphone algorithm. Such signature might correspond, for
+    of the phonetic algorithm. Such signature might correspond, for
     example, to Jones-Smith, Paul John.
     """
 
@@ -171,16 +171,16 @@ def _split_blocks(blocks, X, threshold):
     return splitted_blocks
 
 
-def block_double_metaphone(X, threshold=1000):
+def block_phonetic(X, threshold=1000, phonetic_algorithm="double_metaphone"):
     """Block the signatures.
 
     This blocking algorithm takes into consideration the cases, where
     author has more than one surname. Such a signature can be assigned
     to a block for the first author surname or the last one.
 
-    The names are preprocessed by ``dm_tokenize_name`` function. As a result,
-    here the algorithm operates on ``Double Metaphone`` tokens which are
-    previously normalized.
+    The names are preprocessed by ``phonetic_tokenize_name`` function. As a
+    result, here the algorithm operates on ``Double Metaphone`` tokens which
+    are previously normalized.
 
     The algorithm has two phases. In the first phase, all the signatures with
     one surname are clustered together. Every different surname token creates
@@ -208,6 +208,12 @@ def block_double_metaphone(X, threshold=1000):
         the dictionaries in order to work.
     :param threshold: integer
         Size above which the blocks will be split into smaller ones.
+    :param phonetic algorithm: string
+        Which phonetic algorithm will be used. Options:
+        -  "double_metaphone"
+        -  "nysiis" (only for Python 2)
+        -  "soundex" (only for Python 2)
+
 
     Returns
     -------
@@ -230,7 +236,8 @@ def block_double_metaphone(X, threshold=1000):
     # Create blocks for signatures with single surname
 
     for signature_array in X[:, 0]:
-        tokens = dm_tokenize_name(signature_array['author_name'])
+        tokens = phonetic_tokenize_name(signature_array['author_name'],
+                                        phonetic_algorithm=phonetic_algorithm)
         surname_tokens = tokens[0]
         if len(surname_tokens) == 1:
             # Single surname case
@@ -262,7 +269,6 @@ def block_double_metaphone(X, threshold=1000):
             # Case of multiple surnames
             tokens = token_tuple[1]
             surnames, given_names = tokens
-            last_metaphone_score = 0
 
             # Check if this combination of surnames was already included
             try:

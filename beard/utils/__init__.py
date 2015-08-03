@@ -10,7 +10,7 @@
 """Helper functions."""
 
 from .misc import memoize
-from .names import dm_tokenize_name
+from .names import phonetic_tokenize_name
 from .names import given_name_initial
 from .names import given_name
 from .names import name_initials
@@ -20,7 +20,7 @@ from .transformers import FuncTransformer
 from .transformers import Shaper
 
 __all__ = ("memoize",
-           "dm_tokenize_name",
+           "phonetic_tokenize_name",
            "given_name_initial",
            "given_name",
            "normalize_name",
