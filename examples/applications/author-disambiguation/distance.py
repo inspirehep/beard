@@ -31,6 +31,9 @@ from utils import get_author_full_name
 from utils import get_author_other_names
 from utils import get_author_initials
 from utils import get_author_affiliation
+from utils import get_first_given_name
+from utils import get_second_given_name
+from utils import get_second_initial
 from utils import get_title
 from utils import get_journal
 from utils import get_abstract
@@ -38,6 +41,7 @@ from utils import get_coauthors_from_range
 from utils import get_keywords
 from utils import get_collaborations
 from utils import get_references
+from utils import get_topics
 from utils import get_year
 from utils import group_by_signature
 from utils import load_signatures
@@ -45,6 +49,7 @@ from utils import load_signatures
 from beard.similarity import AbsoluteDifference
 from beard.similarity import CosineSimilarity
 from beard.similarity import PairTransformer
+from beard.similarity import StringDistance
 from beard.utils import FuncTransformer
 from beard.utils import Shaper
 
@@ -63,6 +68,25 @@ def _build_distance_estimator(X, y, verbose=0):
             ]), groupby=group_by_signature)),
             ("combiner", CosineSimilarity())
         ])),
+        ("author_second_initial_similarity", Pipeline([
+            ("pairs", PairTransformer(element_transformer=FuncTransformer(
+                func=get_second_initial
+            ), groupby=group_by_signature)),
+            ("combiner", StringDistance(
+                similarity_function="character_equality"))
+        ])),
+        ("author_first_given_name_similarity", Pipeline([
+            ("pairs", PairTransformer(element_transformer=FuncTransformer(
+                func=get_first_given_name
+            ), groupby=group_by_signature)),
+            ("combiner", StringDistance())
+        ])),
+        ("author_second_given_name_similarity", Pipeline([
+            ("pairs", PairTransformer(element_transformer=FuncTransformer(
+                func=get_second_given_name
+            ), groupby=group_by_signature)),
+            ("combiner", StringDistance())
+        ])),
         ("author_other_names_similarity", Pipeline([
             ("pairs", PairTransformer(element_transformer=Pipeline([
                 ("other_names", FuncTransformer(func=get_author_other_names)),
@@ -71,17 +95,6 @@ def _build_distance_estimator(X, y, verbose=0):
                                            ngram_range=(2, 4),
                                            dtype=np.float32,
                                            decode_error="replace")),
-            ]), groupby=group_by_signature)),
-            ("combiner", CosineSimilarity())
-        ])),
-        ("author_initials_similarity", Pipeline([
-            ("pairs", PairTransformer(element_transformer=Pipeline([
-                ("initials", FuncTransformer(func=get_author_initials)),
-                ("shaper", Shaper(newshape=(-1,))),
-                ("count", CountVectorizer(analyzer="char_wb",
-                                          ngram_range=(1, 1),
-                                          binary=True,
-                                          decode_error="replace")),
             ]), groupby=group_by_signature)),
             ("combiner", CosineSimilarity())
         ])),
@@ -162,6 +175,15 @@ def _build_distance_estimator(X, y, verbose=0):
                                            decode_error="replace")),
             ]), groupby=group_by_signature)),
             ("combiner", CosineSimilarity())
+        ])),
+        ("subject_similairty", Pipeline([
+           ("pairs", PairTransformer(element_transformer=Pipeline([
+               ("keywords", FuncTransformer(func=get_topics)),
+               ("shaper", Shaper(newshape=(-1))),
+               ("tf-idf", TfidfVectorizer(dtype=np.float32,
+                                          decode_error="replace")),
+           ]), groupby=group_by_signature)),
+           ("combiner", CosineSimilarity())
         ])),
         ("year_diff", Pipeline([
             ("pairs", FuncTransformer(func=get_year, dtype=np.int)),

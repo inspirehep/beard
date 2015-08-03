@@ -17,6 +17,7 @@ from __future__ import division
 
 import numpy as np
 import scipy.sparse as sp
+import jellyfish
 
 from sklearn.base import BaseEstimator
 from sklearn.base import TransformerMixin
@@ -464,3 +465,79 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
             Xt[np.where(denominator == 0)[0]] = 0.
 
         return np.array(Xt).reshape(-1, 1)
+
+def _use_similarity(x, y):
+
+    if len(x) <= 1 or len(y) <= 1:
+        return -1.
+
+    # jaro_winkler crashes if slashes are provided.
+    return jellyfish.jaro_winkler(x, y)
+
+def _character_equality(x, y):
+    if x != y:
+        return 0.
+    elif x == "":
+        return 0.5
+    else:
+        return 1.
+
+class StringDistance(BaseEstimator, TransformerMixin):
+
+    """Distance between strings on paired data.
+
+    It can be fed with a custom similarity function. By default jaro winkler is
+    used.
+    """
+
+    def __init__(self, similarity_function="use_similarity"):
+        """Initialize the transformer.
+
+        Parameters
+        ----------
+        :param similarity_function: function (string, string) -> float
+            Function that will evaluate similarity of the paired data.
+        """
+        if similarity_function == "use_similarity":
+            self.similarity_function = _use_similarity
+        elif similarity_function == "character_equality":
+            self.similarity_function = _character_equality
+
+    def fit(self, X, y=None):
+        """(Do nothing).
+
+        Parameters
+        ----------
+        :param X: array-like, shape (n_samples, n_features)
+            Input data.
+
+        Returns
+        -------
+        :returns: self
+        """
+        return self
+
+    def transform(self, X):
+        """Compute string similarity.
+
+        Rows i in ``X`` are assumed to represent pairs, where
+        ``X[i, :n_features]`` and ``X[i, n_features:]`` correspond to their
+        individual elements, each representing a string.
+
+        Parameters
+        ----------
+        :param X: array-like, shape (n_samples, n_features)
+            Input data.
+
+        Returns
+        -------
+        :returns: Xt array-like, shape (n_samples, 1)
+            The transformed data.
+        """
+        X1, X2 = np.split(X, 2, axis=1)
+
+        vectorized = np.vectorize(self.similarity_function)
+        n_samples = X1.shape[0]
+
+        val = vectorized(X1, X2)
+        return val.reshape((n_samples, 1))

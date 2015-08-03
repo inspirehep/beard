@@ -17,7 +17,8 @@
 from beard.ext.metaphone import dm
 
 from beard.utils.names import dm_tokenize_name
-from beard.utils.names import first_name_initial
+from beard.utils.names import given_name_initial
+from beard.utils.names import given_name
 from beard.utils.names import name_initials
 from beard.utils.names import normalize_name
 
@@ -103,12 +104,29 @@ def test_dm_tokenize_name_remove_common_affixes():
                                                  (dm(u"L")[0], dm(u"W")[0]))
 
 
-def test_first_name_initial():
-    """ Test the extraction of the first initial."""
-    assert first_name_initial("Doe, John") == 'j'
-    assert first_name_initial("Doe-Foe, Willem") == 'w'
-    assert first_name_initial("Dupont, Jean-René") == 'j'
-    assert first_name_initial("Dupont, René, III") == 'r'
-    assert first_name_initial("Mieszko") == ''
-    assert first_name_initial("John Doe") == 'j'
-    assert first_name_initial("Dupont, .J") == 'j'
+def test_given_name_initial():
+    """Test the extraction of the first initial."""
+    assert given_name_initial("Doe, John") == 'j'
+    assert given_name_initial("Doe-Foe, Willem") == 'w'
+    assert given_name_initial("Doe=Foe, Willem John", 1) == 'j'
+    assert given_name_initial("Dupont, Jean-René") == 'j'
+    assert given_name_initial("Dupont, René, III") == 'r'
+    assert given_name_initial("Dupont, René Pierre", 1) == 'p'
+    assert given_name_initial("Dupont, René, III Pierre", 1) == ''
+    assert given_name_initial("Mieszko") == ''
+    assert given_name_initial("John Doe") == 'j'
+    assert given_name_initial("Dupont, .J") == 'j'
+
+
+def test_given_name():
+    """Test given name extraction."""
+    assert given_name("Doe, John", 0) == 'John'
+    assert given_name("Doe, John", 1) == ''
+    assert given_name("Doe, John William", 0) == 'John'
+    assert given_name("Doe, John William", 1) == 'William'
+    assert given_name("Dupont, .J", 0) == ".J"
+    assert given_name("John Doe", 0) == 'John'
+    assert given_name("Mieszko", 0) == 'Mieszko'
+    assert given_name("Dupont, René, III Pierre", 0) == 'René'
+    assert given_name("Dupont, René, III Pierre", 1) == ''
+    assert given_name("Dupont, René, III Pierre", 2) == ''
