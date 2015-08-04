@@ -43,7 +43,7 @@ from utils import load_signatures
 from beard.clustering import BlockClustering
 from beard.clustering import block_last_name_first_initial
 from beard.clustering import ScipyHierarchicalClustering
-from beard.metrics import b3_fscore
+from beard.metrics import b3_f_score
 from beard.metrics import b3_precision_recall_fscore
 from beard.metrics import paired_precision_recall_fscore
 
