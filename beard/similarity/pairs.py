@@ -466,13 +466,14 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
 
         return np.array(Xt).reshape(-1, 1)
 
-def _use_similarity(x, y):
 
+def _use_similarity(x, y):
     if len(x) <= 1 or len(y) <= 1:
         return -1.
 
     # jaro_winkler crashes if slashes are provided.
     return jellyfish.jaro_winkler(x, y)
+
 
 def _character_equality(x, y):
     if x != y:
@@ -481,6 +482,7 @@ def _character_equality(x, y):
         return 0.5
     else:
         return 1.
+
 
 class StringDistance(BaseEstimator, TransformerMixin):
 

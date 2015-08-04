@@ -343,12 +343,10 @@ def get_collaborations(s):
 
 def get_references(s):
     """Get references from the signature.
-
     Parameters
     ----------
     :param s: dict
         Signature
-
     Returns
     -------
     :returns: string
