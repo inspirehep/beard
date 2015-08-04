@@ -15,14 +15,14 @@
 
 import numpy as np
 
-from beard.clustering.blocking_funcs import block_double_metaphone
+from beard.clustering.blocking_funcs import block_phonetic
 from beard.clustering.blocking_funcs import block_last_name_first_initial
 
 
 def run_blocking(names, expected_results, threshold=100):
     """Run dm_blocking and assert that the results are correct."""
     sigs = np.array([[{'author_name': sig}] for sig in names])
-    for index, value in enumerate(block_double_metaphone(sigs, threshold)):
+    for index, value in enumerate(block_phonetic(sigs, threshold)):
         assert value == expected_results[index]
 
 

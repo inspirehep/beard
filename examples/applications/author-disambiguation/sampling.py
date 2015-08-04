@@ -42,7 +42,7 @@ import math
 import numpy as np
 import random
 
-from beard.clustering import block_double_metaphone
+from beard.clustering import block_phonetic
 from beard.clustering import block_last_name_first_initial
 
 
@@ -106,6 +106,7 @@ def _noblocking_sampling(sample_size, train_signatures, clusters_reversed):
 
 def pair_sampling(blocking_function,
                   blocking_threshold,
+                  blocking_phonetic_alg,
                   clusters_filename,
                   train_filename,
                   balanced=1, verbose=1,
@@ -122,15 +123,21 @@ def pair_sampling(blocking_function,
     :param blocking_function: string
         must be a defined blocking function. Defined functions are:
         - "block_last_name_first_initial"
-        - "block_double_metaphone"
+        - "block_phonetic"
 
     :param blocking_threshold: int or None
         It determines the maximum allowed size of blocking on the last name
         It can only be:
         -   None; if the blocking function is block_last_name_first_initial
-        -   int; if the blocking function is block_double_metaphone
-            please check the documentation of double_metaphone blocking in
+        -   int; if the blocking function is block_phonetic
+            please check the documentation of phonetic blocking in
             beard.clustering.blocking_funcs.py
+
+    :param blocking_phonetic_alg: string or None
+        If not None, determines which phonetic algorithm is used. Options:
+        -  "double_metaphone"
+        -  "nysiis" (only for Python 2)
+        -  "soundex" (only for Python 2)
 
     :param clusters_filename: string
         Path to the input clusters (ground-truth) file
@@ -179,9 +186,10 @@ def pair_sampling(blocking_function,
 
     if blocking_function == "block_last_name_first_initial":
         blocking = block_last_name_first_initial(train_signatures_ids)
-    elif blocking_function == "block_double_metaphone" and blocking_threshold:
-        blocking = block_double_metaphone(train_signatures_ids,
-                                          blocking_threshold)
+    elif blocking_function == "block_phonetic" and blocking_threshold:
+        blocking = block_phonetic(train_signatures_ids,
+                                  blocking_threshold,
+                                  blocking_phonetic_alg)
     else:
         raise ValueError("No such blocking strategy.")
 
@@ -255,6 +263,8 @@ if __name__ == "__main__":
     parser.add_argument("--input_blocking_function",
                         default="block_last_name_first_initial", type=str)
     parser.add_argument("--input_blocking_threshold", default=None, type=int)
+    parser.add_argument("--input_blocking_phonetic_alg", default=None,
+                        type=str)
     parser.add_argument("--input_balanced", default=1, type=int)
     parser.add_argument("--verbose", default=1, type=int)
     parser.add_argument("--sample_size", default=1000000, type=int)
@@ -263,14 +273,17 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    pairs = pair_sampling(blocking_function=args.input_blocking_function,
-                          blocking_threshold=args.input_blocking_threshold,
-                          clusters_filename=args.input_clusters,
-                          train_filename=args.train_signatures,
-                          balanced=args.input_balanced,
-                          verbose=args.verbose,
-                          sample_size=args.sample_size,
-                          use_blocking=args.use_blocking)
+    pairs = pair_sampling(
+        blocking_function=args.input_blocking_function,
+        blocking_threshold=args.input_blocking_threshold,
+        blocking_phonetic_alg=args.input_blocking_phonetic_alg,
+        clusters_filename=args.input_clusters,
+        train_filename=args.train_signatures,
+        balanced=args.input_balanced,
+        verbose=args.verbose,
+        sample_size=args.sample_size,
+        use_blocking=args.use_blocking
+    )
 
     if args.verbose:
         print("number of pairs", len(pairs))
