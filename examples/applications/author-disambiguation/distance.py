@@ -56,7 +56,7 @@ from beard.utils import FuncTransformer
 from beard.utils import Shaper
 
 
-def _build_distance_estimator(X, y, ethnicity_estimator=None, verbose=0):
+def _build_distance_estimator(X, y, verbose=0, ethnicity_estimator=None):
     """Build a vector reprensation of a pair of signatures."""
     transformer = FeatureUnion([
         ("author_full_name_similarity", Pipeline([
@@ -218,7 +218,7 @@ def _build_distance_estimator(X, y, ethnicity_estimator=None, verbose=0):
 
 
 def learn_model(distance_pairs, input_signatures, input_records,
-                distance_model, verbose=0):
+                distance_model, verbose=0, ethnicity_estimator=None):
     """Learn the distance model for pairs of signatures.
 
     Parameters
@@ -261,7 +261,10 @@ def learn_model(distance_pairs, input_signatures, input_records,
         y[k] = target
 
     # Learn a distance estimator on paired signatures
-    distance_estimator = _build_distance_estimator(X, y, verbose=verbose)
+    distance_estimator = _build_distance_estimator(
+        X, y, verbose=verbose, ethnicity_estimator=ethnicity_estimator
+    )
+
     pickle.dump(distance_estimator,
                 open(distance_model, "wb"),
                 protocol=pickle.HIGHEST_PROTOCOL)
