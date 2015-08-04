@@ -198,7 +198,7 @@ def _build_distance_estimator(X, y, ethnicity_estimator=None, verbose=0):
                 ("name", FuncTransformer(func=get_author_full_name)),
                 ("shaper", Shaper(newshape=(-1,))),
                 ("classifier", EstimatorTransformer(ethnicity_estimator)),
-            ]))),
+            ]), groupby=group_by_signature)),
             ("sigmoid", FuncTransformer(func=expit)),
             ("combiner", ElementMultiplication())
         ])))
