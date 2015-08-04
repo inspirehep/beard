@@ -281,7 +281,7 @@ if __name__ == "__main__":
     ethnicity_estimator = None
     if args.input_ethnicity_estimator:
         ethnicity_estimator = pickle.load(open(args.input_ethnicity_estimator,
-                                          "r"))
+                                               "r"))
 
     learn_model(args.distance_pairs, args.input_signatures, args.input_records,
                 args.distance_model, args.verbose,

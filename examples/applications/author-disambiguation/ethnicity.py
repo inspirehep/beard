@@ -10,8 +10,6 @@
 """Author disambiguation -- Build an estimator for guessing an author ethnic
 group from his name.
 
-See README.rst for further details.
-
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
 .. codeauthor:: Hussein Al-Natsheh <hussein.al.natsheh@cern.ch>
 
