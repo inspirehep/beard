@@ -13,7 +13,7 @@ See README.rst for further details.
 
 .. codeauthor:: Gilles Louppe <g.louppe@cern.ch>
 .. codeauthor:: Mateusz Susik <mateusz.susik@cern.ch>
-.. codeauthor:: Hussein AL-NATSHEH <hussein.al.natsheh@cern.ch>
+.. codeauthor:: Hussein Al-Natsheh <hussein.al.natsheh@cern.ch>
 
 """
 
@@ -24,14 +24,12 @@ import numpy as np
 from scipy.special import expit
 
 from sklearn.ensemble import GradientBoostingClassifier
-from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import FeatureUnion
 from sklearn.pipeline import Pipeline
 
 from utils import get_author_full_name
 from utils import get_author_other_names
-from utils import get_author_initials
 from utils import get_author_affiliation
 from utils import get_first_given_name
 from utils import get_second_given_name
@@ -58,7 +56,7 @@ from beard.utils import FuncTransformer
 from beard.utils import Shaper
 
 
-def _build_distance_estimator(X, y, verbose=0):
+def _build_distance_estimator(X, y, ethnicity_estimator=None, verbose=0):
     """Build a vector reprensation of a pair of signatures."""
     transformer = FeatureUnion([
         ("author_full_name_similarity", Pipeline([
@@ -188,19 +186,22 @@ def _build_distance_estimator(X, y, verbose=0):
                                           decode_error="replace")),
            ]), groupby=group_by_signature)),
            ("combiner", CosineSimilarity())
-        ("author_ethnicity", Pipeline([
-            ("pairs", PairTransformer(element_transformer=Pipeline([
-                ("name", FuncTransformer(func=get_author_full_name)),
-                ("shaper", Shaper(newshape=(-1,))),
-                ("classifier", EstimatorTransformer(race_estimator)),
-            ]))),
-            ("sigmoid", FuncTransformer(func=expit)),
-            ("combiner", ElementMultiplication())
         ])),
         ("year_diff", Pipeline([
             ("pairs", FuncTransformer(func=get_year, dtype=np.int)),
             ("combiner", AbsoluteDifference())
         ]))])
+
+    if ethnicity_estimator is not None:
+        transformer.transformer_list.append(("author_ethnicity", Pipeline([
+            ("pairs", PairTransformer(element_transformer=Pipeline([
+                ("name", FuncTransformer(func=get_author_full_name)),
+                ("shaper", Shaper(newshape=(-1,))),
+                ("classifier", EstimatorTransformer(ethnicity_estimator)),
+            ]))),
+            ("sigmoid", FuncTransformer(func=expit)),
+            ("combiner", ElementMultiplication())
+        ])))
 
     # Train a classifier on these vectors
     classifier = GradientBoostingClassifier(n_estimators=500,
@@ -272,12 +273,16 @@ if __name__ == "__main__":
     parser.add_argument("--distance_model", required=True,  type=str)
     parser.add_argument("--input_signatures", required=True,  type=str)
     parser.add_argument("--input_records", required=True, type=str)
-    parser.add_argument("--input_race_estimator", required=False, type=str),
+    parser.add_argument("--input_ethnicity_estimator", required=False,
+                        type=str),
     parser.add_argument("--verbose", default=1, type=int)
     args = parser.parse_args()
 
-    if args.input_race_estimator:
-        race_estimator = pickle.load(open(args.input_race_estimator, "r"))
+    ethnicity_estimator = None
+    if args.input_ethnicity_estimator:
+        ethnicity_estimator = pickle.load(open(args.input_ethnicity_estimator,
+                                          "r"))
 
     learn_model(args.distance_pairs, args.input_signatures, args.input_records,
-                args.distance_model, args.verbose)
+                args.distance_model, args.verbose,
+                ethnicity_estimator=ethnicity_estimator)
