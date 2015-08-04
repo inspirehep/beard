@@ -43,7 +43,9 @@ from utils import load_signatures
 from beard.clustering import BlockClustering
 from beard.clustering import block_last_name_first_initial
 from beard.clustering import ScipyHierarchicalClustering
-from beard.metrics import b3_f_score
+from beard.metrics import b3_fscore
+from beard.metrics import b3_precision_recall_fscore
+from beard.metrics import paired_precision_recall_fscore
 
 
 def _affinity(X, step=10000):
@@ -72,8 +74,8 @@ def _affinity(X, step=10000):
 def clustering(input_signatures, input_records, distance_model,
                input_clusters=None, output_clusters=None,
                verbose=1, n_jobs=-1, clustering_method="average",
-               clustering_random_state=42, clustering_test_size=None,
-               clustering_threshold=None):
+               train_signatures_file=None, clustering_threshold=None,
+               results_file=None):
     """Cluster signatures using a pretrained distance model.
 
     Parameters
@@ -119,15 +121,16 @@ def clustering(input_signatures, input_records, distance_model,
         Parameter passed to ``ScipyHierarchicalClustering``. Used only if
         ``clustering_test_size`` is specified.
 
-    :param clustering_random_state: int or RandomState
-        Random state for spltting the data into training and test data.
-
-    :param clustering_test_size: float
-        Part of data used in the test set.
+    :param train_signatures_file: str
+        Path to the file with train set signatures. Format the same as in
+        ``input_signatures``.
 
     :param clustering_threshold: float
         Threshold passed to ``ScipyHierarchicalClustering``.
 
+    :param results_file: str
+        Path to the file where the results will be output. It will give
+        additional information about pairwise variant of scores.
     """
     # Assumes that 'distance_estimator' lives in global, making things fast
     global distance_estimator
@@ -152,15 +155,15 @@ def clustering(input_signatures, input_records, distance_model,
             for signature_id in signature_ids:
                 y_true[indices[signature_id]] = label
 
-        if clustering_test_size is not None:
-            train, test = train_test_split(
-                np.arange(len(X)),
-                test_size=clustering_test_size,
-                random_state=clustering_random_state)
+        y = -np.ones(len(X), dtype=np.int)
 
-            y = -np.ones(len(X), dtype=np.int)
-            y[train] = y_true[train]
-
+        if train_signatures_file:
+            train_signatures = json.load(open(train_signatures_file, "r"))
+            train_ids = [x['signature_id'] for x in train_signatures]
+            del train_signatures
+            y[train_ids] = y_true[train_ids]
+            test_ids = list(set([x['signature_id'] for _, x in
+                                 signatures.iteritems()]) - set(train_ids))
         else:
             y = y_true
 
@@ -194,14 +197,43 @@ def clustering(input_signatures, input_records, distance_model,
         print("Number of blocks =", len(clusterer.clusterers_))
         print("True number of clusters", len(np.unique(y_true)))
         print("Number of computed clusters", len(np.unique(labels)))
-        print("B^3 F-score (overall) =", b3_f_score(y_true, labels))
 
-        if clustering_test_size:
-            print("B^3 F-score (train) =",
-                  b3_f_score(y_true[train], labels[train]))
-            print("B^3 F-score (test) =",
-                  b3_f_score(y_true[test], labels[test]))
+        b3_overall = b3_precision_recall_fscore(y_true, labels)
+        print("B^3 F-score (overall) =", b3_overall[2])
 
+        if train_signatures_file:
+            b3_train = b3_precision_recall_fscore(
+                y_true[train_ids],
+                labels[train_ids]
+            )
+            b3_test = b3_precision_recall_fscore(
+                y_true[test_ids],
+                labels[test_ids]
+            )
+            print("B^3 F-score (train) =", b3_train[2])
+            print("B^3 F-score (test) =", b3_test[2])
+            if results_file:
+                paired_overall = paired_precision_recall_fscore(y_true, labels)
+                paired_train = paired_precision_recall_fscore(
+                    y_true[train_ids],
+                    labels[train_ids]
+                )
+                paired_test = paired_precision_recall_fscore(
+                    y_true[test_ids],
+                    labels[test_ids]
+                )
+
+                json.dump({
+                    "description": ["precision", "recall", "f_score"],
+                    "b3": {"overall": list(b3_overall),
+                           "train": list(b3_train),
+                           "test": list(b3_test)
+                           },
+                    "paired": {"overall": list(paired_overall),
+                               "train": list(paired_train),
+                               "test": list(paired_test)
+                               }
+                }, open(results_file, 'w'))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -212,8 +244,8 @@ if __name__ == "__main__":
     parser.add_argument("--output_clusters", required=True, type=str)
     parser.add_argument("--clustering_method", default="average", type=str)
     parser.add_argument("--clustering_threshold", default=None, type=float)
-    parser.add_argument("--clustering_test_size", default=None, type=float)
-    parser.add_argument("--clustering_random_state", default=42, type=int)
+    parser.add_argument("--train_signatures", default=None, type=str)
+    parser.add_argument("--results_file", default=None, type=str)
     parser.add_argument("--verbose", default=1, type=int)
     parser.add_argument("--n_jobs", default=-1, type=int)
     args = parser.parse_args()
@@ -221,5 +253,5 @@ if __name__ == "__main__":
     clustering(args.input_signatures, args.input_records, args.distance_model,
                args.input_clusters, args.output_clusters,
                args.verbose, args.n_jobs, args.clustering_method,
-               args.clustering_random_state, args.clustering_test_size,
-               args.clustering_threshold)
+               args.train_signatures, args.clustering_threshold,
+               args.results_file)
