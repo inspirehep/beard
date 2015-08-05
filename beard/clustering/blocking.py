@@ -18,6 +18,7 @@ from __future__ import print_function
 
 import multiprocessing as mp
 import numpy as np
+import time
 
 from sklearn.base import BaseEstimator
 from sklearn.base import clone
@@ -223,16 +224,19 @@ class BlockClustering(BaseEstimator, ClusterMixin):
 
             data_queue.put(('middle', block, None))
 
-        data_queue.put(('end', None, None))
-
         # Get the last results and tell the subprocesses to finish
         for x in range(self.n_jobs):
             if blocks_computed < blocks_all:
-                print("%s blocks computed out of %s" % (blocks_computed, blocks_all))
+                print("%s blocks computed out of %s" % (blocks_computed,
+                                                        blocks_all))
                 b, clusterer = result_queue.get()
                 blocks_computed += 1
                 if clusterer:
                     self.clusterers_[b] = clusterer
+
+        data_queue.put(('end', None, None))
+
+        time.sleep(1)
 
         return self
 
