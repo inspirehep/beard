@@ -16,7 +16,6 @@
 
 from __future__ import print_function
 
-from multiprocessing.queues import SimpleQueue
 import multiprocessing as mp
 import numpy as np
 
@@ -26,6 +25,11 @@ from sklearn.base import ClusterMixin
 from sklearn.utils import column_or_1d
 
 from .blocking_funcs import block_single
+
+try:
+    from multiprocessing import SimpleQueue
+except ImportError:
+    from multiprocessing.queues import SimpleQueue
 
 
 class _SingleClustering(BaseEstimator, ClusterMixin):
