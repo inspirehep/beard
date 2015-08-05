@@ -16,6 +16,7 @@
 
 from __future__ import print_function
 
+from multiprocessing.queues import SimpleQueue
 import multiprocessing as mp
 import numpy as np
 
@@ -188,9 +189,9 @@ class BlockClustering(BaseEstimator, ClusterMixin):
 
         processes = []
         # Here the blocks will be passed to subprocesses
-        data_queue = mp.Queue()
+        data_queue = SimpleQueue()
         # Here the results will be passed back
-        result_queue = mp.Queue()
+        result_queue = SimpleQueue()
         for x in range(self.n_jobs):
             processes.append(mp.Process(target=_parallel_fit, args=(self.fit_,
                              self.partial_fit_, self.base_estimator,
@@ -223,6 +224,7 @@ class BlockClustering(BaseEstimator, ClusterMixin):
         # Get the last results and tell the subprocesses to finish
         for x in range(self.n_jobs):
             if blocks_computed < blocks_all:
+                print("%s blocks computed out of %s" % (blocks_computed, blocks_all))
                 b, clusterer = result_queue.get()
                 blocks_computed += 1
                 if clusterer:
