@@ -247,7 +247,7 @@ if __name__ == "__main__":
     parser.add_argument("--train_signatures", default=None, type=str)
     parser.add_argument("--results_file", default=None, type=str)
     parser.add_argument("--verbose", default=1, type=int)
-    parser.add_argument("--n_jobs", default=-1, type=int)
+    parser.add_argument("--n_jobs", default=1, type=int)
     args = parser.parse_args()
 
     clustering(args.input_signatures, args.input_records, args.distance_model,
