@@ -52,7 +52,7 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
-packages = find_packages(exclude=['doc', 'examples'])
+packages = find_packages(exclude=['doc'])
 # Get the version string. Cannot be done with import!
 with open(os.path.join("beard", "__init__.py"), "rt") as f:
     _version = re.search(
