@@ -21,6 +21,8 @@ import pickle
 import json
 import numpy as np
 
+from functools import partial
+
 from sklearn.cross_validation import train_test_split
 
 # These imports are used during unpickling.
@@ -42,6 +44,7 @@ from utils import load_signatures
 
 from beard.clustering import BlockClustering
 from beard.clustering import block_last_name_first_initial
+from beard.clustering import block_phonetic
 from beard.clustering import ScipyHierarchicalClustering
 from beard.metrics import b3_f_score
 from beard.metrics import b3_precision_recall_fscore
@@ -75,7 +78,8 @@ def clustering(input_signatures, input_records, distance_model,
                input_clusters=None, output_clusters=None,
                verbose=1, n_jobs=-1, clustering_method="average",
                train_signatures_file=None, clustering_threshold=None,
-               results_file=None):
+               results_file=None, blocking_function="block_phonetic",
+               blocking_threshold=1, blocking_phonetic_alg="nysiis"):
     """Cluster signatures using a pretrained distance model.
 
     Parameters
@@ -131,11 +135,35 @@ def clustering(input_signatures, input_records, distance_model,
     :param results_file: str
         Path to the file where the results will be output. It will give
         additional information about pairwise variant of scores.
+
+    :param blocking_function: string
+        must be a defined blocking function. Defined functions are:
+        - "block_last_name_first_initial"
+        - "block_phonetic"
+
+    :param blocking_threshold: int or None
+        It determines the maximum allowed size of blocking on the last name
+        It can only be:
+        -   None; if the blocking function is block_last_name_first_initial
+        -   int; if the blocking function is block_phonetic
+            please check the documentation of phonetic blocking in
+            beard.clustering.blocking_funcs.py
+
+    :param blocking_phonetic_alg: string or None
+        If not None, determines which phonetic algorithm is used. Options:
+        -  "double_metaphone"
+        -  "nysiis" (only for Python 2)
+        -  "soundex" (only for Python 2)
     """
     # Assumes that 'distance_estimator' lives in global, making things fast
     global distance_estimator
-
     distance_estimator = pickle.load(open(distance_model, "rb"))
+
+    try:
+        distance_estimator.steps[-1][1].set_params(n_jobs=1)
+    except:
+        pass
+
     signatures, records = load_signatures(input_signatures,
                                           input_records)
 
@@ -145,6 +173,13 @@ def clustering(input_signatures, input_records, distance_model,
                                          key=lambda s: s["signature_id"])):
         X[i, 0] = signature
         indices[signature["signature_id"]] = i
+
+    if blocking_function == "block_last_name_first_initial":
+        block_function = block_last_name_first_initial
+    else:
+        block_function = partial(block_phonetic,
+                                 threshold=blocking_threshold,
+                                 phonetic_algorithm=blocking_phonetic_alg)
 
     # Semi-supervised block clustering
     if input_clusters:
@@ -171,7 +206,7 @@ def clustering(input_signatures, input_records, distance_model,
         y = None
 
     clusterer = BlockClustering(
-        blocking=block_last_name_first_initial,
+        blocking=block_function,
         base_estimator=ScipyHierarchicalClustering(
             affinity=_affinity,
             threshold=clustering_threshold,
@@ -246,6 +281,10 @@ if __name__ == "__main__":
     parser.add_argument("--clustering_threshold", default=None, type=float)
     parser.add_argument("--train_signatures", default=None, type=str)
     parser.add_argument("--results_file", default=None, type=str)
+    parser.add_argument("--blocking_function", default="block_phonetic",
+                        type=str)
+    parser.add_argument("--blocking_threshold", default=1, type=int)
+    parser.add_argument("--blocking_phonetic_alg", default="nysiis", type=str)
     parser.add_argument("--verbose", default=1, type=int)
     parser.add_argument("--n_jobs", default=1, type=int)
     args = parser.parse_args()

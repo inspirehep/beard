@@ -24,6 +24,7 @@ import numpy as np
 from scipy.special import expit
 
 from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import FeatureUnion
 from sklearn.pipeline import Pipeline
@@ -204,11 +205,16 @@ def _build_distance_estimator(X, y, verbose=0, ethnicity_estimator=None):
         ])))
 
     # Train a classifier on these vectors
-    classifier = GradientBoostingClassifier(n_estimators=500,
-                                            max_depth=9,
-                                            max_features=10,
-                                            learning_rate=0.125,
-                                            verbose=verbose)
+
+    # classifier = GradientBoostingClassifier(n_estimators=500,
+    #                                         max_depth=9,
+    #                                         max_features=10,
+    #                                         learning_rate=0.125,
+    #                                         verbose=verbose)
+
+    classifier = RandomForestClassifier(n_estimators=500,
+                                        verbose=verbose,
+                                        n_jobs=8)
 
     # Return the whole pipeline
     estimator = Pipeline([("transformer", transformer),

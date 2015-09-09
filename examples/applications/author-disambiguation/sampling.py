@@ -234,7 +234,6 @@ def pair_sampling(blocking_function,
                         dadn.append((s1_id, s2_id, 1))
 
     if balanced:
-
         if verbose:
             print("len of dasn:", len(dasn))
             print("len of sadn:", len(sadn))
@@ -258,31 +257,30 @@ def pair_sampling(blocking_function,
 if __name__ == "__main__":
     # Parse command line arugments
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output_pairs", default="pairs.json", type=str)
+    parser.add_argument("--input_signatures", required=True, type=str)
     parser.add_argument("--input_clusters", default="clusters.json", type=str)
-    parser.add_argument("--input_blocking_function",
-                        default="block_last_name_first_initial", type=str)
-    parser.add_argument("--input_blocking_threshold", default=None, type=int)
-    parser.add_argument("--input_blocking_phonetic_alg", default=None,
-                        type=str)
-    parser.add_argument("--input_balanced", default=1, type=int)
-    parser.add_argument("--verbose", default=1, type=int)
+    parser.add_argument("--balanced", default=1, type=int)
     parser.add_argument("--sample_size", default=1000000, type=int)
-    parser.add_argument("--train_signatures", required=True, type=str)
+    parser.add_argument("--output_pairs", default="pairs.json", type=str)
     parser.add_argument("--use_blocking", default=1, type=int)
+    parser.add_argument("--blocking_function", default="block_phonetic",
+                        type=str)
+    parser.add_argument("--blocking_threshold", default=1, type=int)
+    parser.add_argument("--blocking_phonetic_alg", default="nysiis", type=str)
+    parser.add_argument("--verbose", default=1, type=int)
 
     args = parser.parse_args()
 
     pairs = pair_sampling(
-        blocking_function=args.input_blocking_function,
-        blocking_threshold=args.input_blocking_threshold,
-        blocking_phonetic_alg=args.input_blocking_phonetic_alg,
+        train_filename=args.input_signatures,
         clusters_filename=args.input_clusters,
-        train_filename=args.train_signatures,
-        balanced=args.input_balanced,
-        verbose=args.verbose,
+        balanced=args.balanced,
         sample_size=args.sample_size,
-        use_blocking=args.use_blocking
+        use_blocking=args.use_blocking,
+        blocking_function=args.blocking_function,
+        blocking_threshold=args.blocking_threshold,
+        blocking_phonetic_alg=args.blocking_phonetic_alg,
+        verbose=args.verbose
     )
 
     if args.verbose:
