@@ -172,7 +172,9 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         scoring = supervised_scoring is not None or \
             unsupervised_scoring is not None
 
-        if threshold is None and n_clusters is None and scoring:
+        self.best_threshold_tuned_ = False
+
+        if n_clusters is None and scoring:
             best_score = -np.inf
             thresholds = np.concatenate(([0],
                                          self.linkage_[:, 2],
@@ -218,6 +220,8 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
                     best_score = score
                     best_threshold = threshold
 
+            self.best_threshold_tuned_ = True
+
         self.best_threshold_ = best_threshold
         self.n_samples_ = n_samples
 
@@ -256,7 +260,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
             threshold = self.threshold
 
             # Override threshold with the estimated one if it is None
-            if threshold is None:
+            if self.best_threshold_tuned_ or self.threshold is None:
                 threshold = self.best_threshold_
 
             labels = hac.fcluster(self.linkage_, threshold,
