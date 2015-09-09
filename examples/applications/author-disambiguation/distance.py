@@ -57,132 +57,201 @@ from beard.utils import FuncTransformer
 from beard.utils import Shaper
 
 
-def _build_distance_estimator(X, y, verbose=0, ethnicity_estimator=None):
+def _build_distance_estimator(X, y, verbose=0, ethnicity_estimator=None,
+                              fast=False):
     """Build a vector reprensation of a pair of signatures."""
-    transformer = FeatureUnion([
-        ("author_full_name_similarity", Pipeline([
-            ("pairs", PairTransformer(element_transformer=Pipeline([
-                ("full_name", FuncTransformer(func=get_author_full_name)),
-                ("shaper", Shaper(newshape=(-1,))),
-                ("tf-idf", TfidfVectorizer(analyzer="char_wb",
-                                           ngram_range=(2, 4),
-                                           dtype=np.float32,
-                                           decode_error="replace")),
-            ]), groupby=group_by_signature)),
-            ("combiner", CosineSimilarity())
-        ])),
-        ("author_second_initial_similarity", Pipeline([
-            ("pairs", PairTransformer(element_transformer=FuncTransformer(
-                func=get_second_initial
-            ), groupby=group_by_signature)),
-            ("combiner", StringDistance(
-                similarity_function="character_equality"))
-        ])),
-        ("author_first_given_name_similarity", Pipeline([
-            ("pairs", PairTransformer(element_transformer=FuncTransformer(
-                func=get_first_given_name
-            ), groupby=group_by_signature)),
-            ("combiner", StringDistance())
-        ])),
-        ("author_second_given_name_similarity", Pipeline([
-            ("pairs", PairTransformer(element_transformer=FuncTransformer(
-                func=get_second_given_name
-            ), groupby=group_by_signature)),
-            ("combiner", StringDistance())
-        ])),
-        ("author_other_names_similarity", Pipeline([
-            ("pairs", PairTransformer(element_transformer=Pipeline([
-                ("other_names", FuncTransformer(func=get_author_other_names)),
-                ("shaper", Shaper(newshape=(-1,))),
-                ("tf-idf", TfidfVectorizer(analyzer="char_wb",
-                                           ngram_range=(2, 4),
-                                           dtype=np.float32,
-                                           decode_error="replace")),
-            ]), groupby=group_by_signature)),
-            ("combiner", CosineSimilarity())
-        ])),
-        ("affiliation_similarity", Pipeline([
-            ("pairs", PairTransformer(element_transformer=Pipeline([
-                ("affiliation", FuncTransformer(func=get_author_affiliation)),
-                ("shaper", Shaper(newshape=(-1,))),
-                ("tf-idf", TfidfVectorizer(analyzer="char_wb",
-                                           ngram_range=(2, 4),
-                                           dtype=np.float32,
-                                           decode_error="replace")),
-            ]), groupby=group_by_signature)),
-            ("combiner", CosineSimilarity())
-        ])),
-        ("coauthors_similarity", Pipeline([
-            ("pairs", PairTransformer(element_transformer=Pipeline([
-                ("coauthors", FuncTransformer(func=get_coauthors_from_range)),
-                ("shaper", Shaper(newshape=(-1,))),
-                ("tf-idf", TfidfVectorizer(dtype=np.float32,
-                                           decode_error="replace")),
-            ]), groupby=group_by_signature)),
-            ("combiner", CosineSimilarity())
-        ])),
-        ("title_similarity", Pipeline([
-            ("pairs", PairTransformer(element_transformer=Pipeline([
-                ("title", FuncTransformer(func=get_title)),
-                ("shaper", Shaper(newshape=(-1,))),
-                ("tf-idf", TfidfVectorizer(analyzer="char_wb",
-                                           ngram_range=(2, 4),
-                                           dtype=np.float32,
-                                           decode_error="replace")),
-            ]), groupby=group_by_signature)),
-            ("combiner", CosineSimilarity())
-        ])),
-        ("journal_similarity", Pipeline([
-            ("pairs", PairTransformer(element_transformer=Pipeline([
-                ("journal", FuncTransformer(func=get_journal)),
-                ("shaper", Shaper(newshape=(-1,))),
-                ("tf-idf", TfidfVectorizer(analyzer="char_wb",
-                                           ngram_range=(2, 4),
-                                           dtype=np.float32,
-                                           decode_error="replace")),
-            ]), groupby=group_by_signature)),
-            ("combiner", CosineSimilarity())
-        ])),
-        ("abstract_similarity", Pipeline([
-            ("pairs", PairTransformer(element_transformer=Pipeline([
-                ("abstract", FuncTransformer(func=get_abstract)),
-                ("shaper", Shaper(newshape=(-1,))),
-                ("tf-idf", TfidfVectorizer(dtype=np.float32,
-                                           decode_error="replace")),
-            ]), groupby=group_by_signature)),
-            ("combiner", CosineSimilarity())
-        ])),
-        ("keywords_similarity", Pipeline([
-            ("pairs", PairTransformer(element_transformer=Pipeline([
-                ("keywords", FuncTransformer(func=get_keywords)),
-                ("shaper", Shaper(newshape=(-1,))),
-                ("tf-idf", TfidfVectorizer(dtype=np.float32,
-                                           decode_error="replace")),
-            ]), groupby=group_by_signature)),
-            ("combiner", CosineSimilarity())
-        ])),
-        ("collaborations_similarity", Pipeline([
-            ("pairs", PairTransformer(element_transformer=Pipeline([
-                ("collaborations", FuncTransformer(func=get_collaborations)),
-                ("shaper", Shaper(newshape=(-1,))),
-                ("tf-idf", TfidfVectorizer(dtype=np.float32,
-                                           decode_error="replace")),
-            ]), groupby=group_by_signature)),
-            ("combiner", CosineSimilarity())
-        ])),
-        ("subject_similairty", Pipeline([
-           ("pairs", PairTransformer(element_transformer=Pipeline([
-               ("keywords", FuncTransformer(func=get_topics)),
-               ("shaper", Shaper(newshape=(-1))),
-               ("tf-idf", TfidfVectorizer(dtype=np.float32,
-                                          decode_error="replace")),
-           ]), groupby=group_by_signature)),
-           ("combiner", CosineSimilarity())
-        ])),
-        ("year_diff", Pipeline([
-            ("pairs", FuncTransformer(func=get_year, dtype=np.int)),
-            ("combiner", AbsoluteDifference())
-        ]))])
+    if not fast:
+        transformer = FeatureUnion([
+            ("author_full_name_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=Pipeline([
+                    ("full_name", FuncTransformer(func=get_author_full_name)),
+                    ("shaper", Shaper(newshape=(-1,))),
+                    ("tf-idf", TfidfVectorizer(analyzer="char_wb",
+                                               ngram_range=(2, 4),
+                                               dtype=np.float32,
+                                               decode_error="replace")),
+                ]), groupby=group_by_signature)),
+                ("combiner", CosineSimilarity())
+            ])),
+            ("author_second_initial_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=FuncTransformer(
+                    func=get_second_initial
+                ), groupby=group_by_signature)),
+                ("combiner", StringDistance(
+                    similarity_function="character_equality"))
+            ])),
+            ("author_first_given_name_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=FuncTransformer(
+                    func=get_first_given_name
+                ), groupby=group_by_signature)),
+                ("combiner", StringDistance())
+            ])),
+            ("author_second_given_name_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=FuncTransformer(
+                    func=get_second_given_name
+                ), groupby=group_by_signature)),
+                ("combiner", StringDistance())
+            ])),
+            ("author_other_names_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=Pipeline([
+                    ("other_names", FuncTransformer(
+                        func=get_author_other_names)),
+                    ("shaper", Shaper(newshape=(-1,))),
+                    ("tf-idf", TfidfVectorizer(analyzer="char_wb",
+                                               ngram_range=(2, 4),
+                                               dtype=np.float32,
+                                               decode_error="replace")),
+                ]), groupby=group_by_signature)),
+                ("combiner", CosineSimilarity())
+            ])),
+            ("affiliation_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=Pipeline([
+                    ("affiliation", FuncTransformer(
+                        func=get_author_affiliation)),
+                    ("shaper", Shaper(newshape=(-1,))),
+                    ("tf-idf", TfidfVectorizer(analyzer="char_wb",
+                                               ngram_range=(2, 4),
+                                               dtype=np.float32,
+                                               decode_error="replace")),
+                ]), groupby=group_by_signature)),
+                ("combiner", CosineSimilarity())
+            ])),
+            ("coauthors_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=Pipeline([
+                    ("coauthors", FuncTransformer(
+                        func=get_coauthors_from_range)),
+                    ("shaper", Shaper(newshape=(-1,))),
+                    ("tf-idf", TfidfVectorizer(dtype=np.float32,
+                                               decode_error="replace")),
+                ]), groupby=group_by_signature)),
+                ("combiner", CosineSimilarity())
+            ])),
+            ("title_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=Pipeline([
+                    ("title", FuncTransformer(func=get_title)),
+                    ("shaper", Shaper(newshape=(-1,))),
+                    ("tf-idf", TfidfVectorizer(analyzer="char_wb",
+                                               ngram_range=(2, 4),
+                                               dtype=np.float32,
+                                               decode_error="replace")),
+                ]), groupby=group_by_signature)),
+                ("combiner", CosineSimilarity())
+            ])),
+            ("journal_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=Pipeline([
+                    ("journal", FuncTransformer(func=get_journal)),
+                    ("shaper", Shaper(newshape=(-1,))),
+                    ("tf-idf", TfidfVectorizer(analyzer="char_wb",
+                                               ngram_range=(2, 4),
+                                               dtype=np.float32,
+                                               decode_error="replace")),
+                ]), groupby=group_by_signature)),
+                ("combiner", CosineSimilarity())
+            ])),
+            ("abstract_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=Pipeline([
+                    ("abstract", FuncTransformer(func=get_abstract)),
+                    ("shaper", Shaper(newshape=(-1,))),
+                    ("tf-idf", TfidfVectorizer(dtype=np.float32,
+                                               decode_error="replace")),
+                ]), groupby=group_by_signature)),
+                ("combiner", CosineSimilarity())
+            ])),
+            ("keywords_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=Pipeline([
+                    ("keywords", FuncTransformer(func=get_keywords)),
+                    ("shaper", Shaper(newshape=(-1,))),
+                    ("tf-idf", TfidfVectorizer(dtype=np.float32,
+                                               decode_error="replace")),
+                ]), groupby=group_by_signature)),
+                ("combiner", CosineSimilarity())
+            ])),
+            ("collaborations_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=Pipeline([
+                    ("collaborations", FuncTransformer(
+                        func=get_collaborations)),
+                    ("shaper", Shaper(newshape=(-1,))),
+                    ("tf-idf", TfidfVectorizer(dtype=np.float32,
+                                               decode_error="replace")),
+                ]), groupby=group_by_signature)),
+                ("combiner", CosineSimilarity())
+            ])),
+            ("subject_similairty", Pipeline([
+               ("pairs", PairTransformer(element_transformer=Pipeline([
+                   ("keywords", FuncTransformer(func=get_topics)),
+                   ("shaper", Shaper(newshape=(-1))),
+                   ("tf-idf", TfidfVectorizer(dtype=np.float32,
+                                              decode_error="replace")),
+               ]), groupby=group_by_signature)),
+               ("combiner", CosineSimilarity())
+            ])),
+            ("year_diff", Pipeline([
+                ("pairs", FuncTransformer(func=get_year, dtype=np.int)),
+                ("combiner", AbsoluteDifference())
+            ]))])
+
+    else:
+        transformer = FeatureUnion([
+            ("author_full_name_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=Pipeline([
+                    ("full_name", FuncTransformer(func=get_author_full_name)),
+                    ("shaper", Shaper(newshape=(-1,))),
+                    ("tf-idf", TfidfVectorizer(analyzer="char_wb",
+                                               ngram_range=(2, 4),
+                                               dtype=np.float32,
+                                               decode_error="replace")),
+                ]), groupby=group_by_signature)),
+                ("combiner", CosineSimilarity())
+            ])),
+            ("author_other_names_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=Pipeline([
+                    ("other_names", FuncTransformer(
+                        func=get_author_other_names)),
+                    ("shaper", Shaper(newshape=(-1,))),
+                    ("tf-idf", TfidfVectorizer(analyzer="char_wb",
+                                               ngram_range=(2, 4),
+                                               dtype=np.float32,
+                                               decode_error="replace")),
+                ]), groupby=group_by_signature)),
+                ("combiner", CosineSimilarity())
+            ])),
+            ("affiliation_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=Pipeline([
+                    ("affiliation", FuncTransformer(
+                        func=get_author_affiliation)),
+                    ("shaper", Shaper(newshape=(-1,))),
+                    ("tf-idf", TfidfVectorizer(analyzer="char_wb",
+                                               ngram_range=(2, 4),
+                                               dtype=np.float32,
+                                               decode_error="replace")),
+                ]), groupby=group_by_signature)),
+                ("combiner", CosineSimilarity())
+            ])),
+            ("coauthors_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=Pipeline([
+                    ("coauthors", FuncTransformer(
+                        func=get_coauthors_from_range)),
+                    ("shaper", Shaper(newshape=(-1,))),
+                    ("tf-idf", TfidfVectorizer(dtype=np.float32,
+                                               decode_error="replace")),
+                ]), groupby=group_by_signature)),
+                ("combiner", CosineSimilarity())
+            ])),
+            ("title_similarity", Pipeline([
+                ("pairs", PairTransformer(element_transformer=Pipeline([
+                    ("title", FuncTransformer(func=get_title)),
+                    ("shaper", Shaper(newshape=(-1,))),
+                    ("tf-idf", TfidfVectorizer(analyzer="char_wb",
+                                               ngram_range=(2, 4),
+                                               dtype=np.float32,
+                                               decode_error="replace")),
+                ]), groupby=group_by_signature)),
+                ("combiner", CosineSimilarity())
+            ])),
+            ("year_diff", Pipeline([
+                ("pairs", FuncTransformer(func=get_year, dtype=np.int)),
+                ("combiner", AbsoluteDifference())
+            ]))])
 
     if ethnicity_estimator is not None:
         transformer.transformer_list.append(("author_ethnicity", Pipeline([
@@ -215,7 +284,8 @@ def _build_distance_estimator(X, y, verbose=0, ethnicity_estimator=None):
 
 
 def learn_model(distance_pairs, input_signatures, input_records,
-                distance_model, verbose=0, ethnicity_estimator=None):
+                distance_model, verbose=0, ethnicity_estimator=None,
+                fast=False):
     """Learn the distance model for pairs of signatures.
 
     Parameters
@@ -245,6 +315,10 @@ def learn_model(distance_pairs, input_signatures, input_records,
 
     :param distance_model: string
         Path to the file with the distance model. The file should be pickled.
+
+    :param fast: boolean
+        Whether the distance model should be built on a reduced set of
+        features.
     """
     pairs = json.load(open(distance_pairs, "r"))
     signatures, records = load_signatures(input_signatures, input_records)
@@ -259,7 +333,8 @@ def learn_model(distance_pairs, input_signatures, input_records,
 
     # Learn a distance estimator on paired signatures
     distance_estimator = _build_distance_estimator(
-        X, y, verbose=verbose, ethnicity_estimator=ethnicity_estimator
+        X, y,
+        verbose=verbose, ethnicity_estimator=ethnicity_estimator, fast=fast
     )
 
     pickle.dump(distance_estimator,
@@ -275,6 +350,7 @@ if __name__ == "__main__":
     parser.add_argument("--input_records", required=True, type=str)
     parser.add_argument("--input_ethnicity_estimator", required=False,
                         type=str),
+    parser.add_argument("--fast", default=0, type=int)
     parser.add_argument("--verbose", default=1, type=int)
     args = parser.parse_args()
 
@@ -285,4 +361,5 @@ if __name__ == "__main__":
 
     learn_model(args.distance_pairs, args.input_signatures, args.input_records,
                 args.distance_model, args.verbose,
-                ethnicity_estimator=ethnicity_estimator)
+                ethnicity_estimator=ethnicity_estimator,
+                fast=args.fast == 1)
