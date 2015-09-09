@@ -51,7 +51,7 @@ from beard.metrics import b3_precision_recall_fscore
 from beard.metrics import paired_precision_recall_fscore
 
 
-def _affinity(X, step=15000):
+def _affinity(X, step=10000):
     """Custom affinity function, using a pre-learned distance estimator."""
     # Assumes that 'distance_estimator' lives in global, making things fast
     global distance_estimator
@@ -160,8 +160,7 @@ def clustering(input_signatures, input_records, distance_model,
     distance_estimator = pickle.load(open(distance_model, "rb"))
 
     try:
-        distance_estimator.steps[-1][1].set_params(
-            n_jobs=n_jobs // 2 if n_jobs > 1 else 1)
+        distance_estimator.steps[-1][1].set_params(n_jobs=1)
     except:
         pass
 
@@ -214,7 +213,7 @@ def clustering(input_signatures, input_records, distance_model,
             method=clustering_method,
             supervised_scoring=b3_f_score),
         verbose=verbose,
-        n_jobs=2 if n_jobs > 1 else 1).fit(X, y)
+        n_jobs=n_jobs).fit(X, y)
 
     labels = clusterer.labels_
 

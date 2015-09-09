@@ -266,15 +266,15 @@ def _build_distance_estimator(X, y, verbose=0, ethnicity_estimator=None,
 
     # Train a classifier on these vectors
 
-    # classifier = GradientBoostingClassifier(n_estimators=500,
-    #                                         max_depth=9,
-    #                                         max_features=10,
-    #                                         learning_rate=0.125,
-    #                                         verbose=verbose)
+    classifier = GradientBoostingClassifier(n_estimators=500,
+                                            max_depth=9,
+                                            max_features=10,
+                                            learning_rate=0.125,
+                                            verbose=verbose)
 
-    classifier = RandomForestClassifier(n_estimators=500,
-                                        verbose=verbose,
-                                        n_jobs=8)
+    # classifier = RandomForestClassifier(n_estimators=500,
+    #                                     verbose=verbose,
+    #                                     n_jobs=8)
 
     # Return the whole pipeline
     estimator = Pipeline([("transformer", transformer),
