@@ -188,7 +188,8 @@ def _build_distance_estimator(X, y, verbose=0, ethnicity_estimator=None,
             ("year_diff", Pipeline([
                 ("pairs", FuncTransformer(func=get_year, dtype=np.int)),
                 ("combiner", AbsoluteDifference())
-            ]))])
+            ]))
+        ])
 
     else:
         transformer = FeatureUnion([
@@ -251,7 +252,8 @@ def _build_distance_estimator(X, y, verbose=0, ethnicity_estimator=None,
             ("year_diff", Pipeline([
                 ("pairs", FuncTransformer(func=get_year, dtype=np.int)),
                 ("combiner", AbsoluteDifference())
-            ]))])
+            ]))
+        ])
 
     if ethnicity_estimator is not None:
         transformer.transformer_list.append(("author_ethnicity", Pipeline([

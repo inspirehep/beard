@@ -2,7 +2,7 @@ This example shows how to build a full author disambiguation pipeline.
 The pipeline is made of several scripts:
 
 - ``sampling.py``: Build a training set of labeled pairs from a set of
-  signatures, to be further used as input for ``distance.py``.
+  signatures, to be further used as input for ``distance.py``.::
 
     python sampling.py \
         --input_signatures input/signatures.json \
@@ -19,7 +19,7 @@ The pipeline is made of several scripts:
 - ``distance.py``: for inferring with supervised learning a distance or
   linkage function between signatures. An estimator is learned from
   labeled paired data and models whether two signatures belong to the same
-  person.
+  person.::
 
     python distance.py \
         --distance_pairs 1M_nysiis_balanced.json \
@@ -33,7 +33,7 @@ The pipeline is made of several scripts:
   signatures from the same author. Signatures are blocked and then clustered
   using hierarchical clustering together with the linkage function learned at
   the  previous step. For each block, the best cut-off threshold is chosen so
-  as to maximize some scoring metric on the provided labeled data.
+  as to maximize some scoring metric on the provided labeled data.::
 
     python clustering.py \
      --distance_model linkage.dat \

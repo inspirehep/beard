@@ -29,6 +29,9 @@ from sklearn.cross_validation import train_test_split
 from utils import get_author_full_name
 from utils import get_author_other_names
 from utils import get_author_initials
+from utils import get_surname
+from utils import get_first_initial
+from utils import get_second_initial
 from utils import get_author_affiliation
 from utils import get_title
 from utils import get_journal
