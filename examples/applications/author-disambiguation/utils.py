@@ -105,6 +105,18 @@ def get_second_given_name(s):
     return v
 
 
+def get_surname(s):
+    return s['author_name'].split(" ")[0].split(",")[0]
+
+
+def get_first_initial(s):
+    v = given_name_initial(s["author_name"], 0)
+    try:
+        return v
+    except IndexError:
+        return ""
+
+
 def get_second_initial(s):
     """Get author second given name's initial from the signature.
 
