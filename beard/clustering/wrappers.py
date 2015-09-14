@@ -169,7 +169,6 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         n_clusters = self.n_clusters
         supervised_scoring = self.supervised_scoring
         unsupervised_scoring = self.unsupervised_scoring
-        threshold = self.threshold
         ground_truth = (y is not None) and np.any(np.array(y) != -1)
         scoring = supervised_scoring is not None or \
             unsupervised_scoring is not None
@@ -204,7 +203,6 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
                                                    labels[train])
 
                 elif unsupervised_scoring is not None:
-
                     if self.scoring_data == "raw":
                         score = unsupervised_scoring(X_raw, labels)
 
@@ -213,6 +211,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
 
                     else:
                         score = unsupervised_scoring(labels)
+
                 else:
                     break
 
@@ -220,7 +219,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
                     best_score = score
                     best_threshold = threshold
 
-        self.best_threshold = best_threshold
+        self.best_threshold_ = best_threshold
         self.n_samples_ = n_samples
 
         return self

@@ -32,7 +32,8 @@ from beard.clustering import ScipyHierarchicalClustering
 
 def generate_data(supervised=False, affinity=False):
     rng = check_random_state(42)
-    X, y = make_blobs(centers=4, shuffle=False, random_state=rng)
+    X, y = make_blobs(centers=4, cluster_std=0.01,
+                      shuffle=False, random_state=rng)
 
     if affinity:
         d = euclidean_distances(X)
