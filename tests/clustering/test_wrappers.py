@@ -216,7 +216,9 @@ def test_shc_threshold():
     assert_equal(len(np.unique(labels1)), 2)
 
     # change threshold
-    clusterer.set_params(n_clusters=None, threshold=clusterer.linkage_[-5, 2])
+    clusterer.set_params(best_threshold_precedence=False)
+    clusterer.set_params(n_clusters=None,
+                         threshold=clusterer.linkage_[-5, 2])
     labels = clusterer.labels_
     assert_equal(len(np.unique(labels)), 5)
     clusterer.set_params(threshold=clusterer.linkage_[-4, 2])

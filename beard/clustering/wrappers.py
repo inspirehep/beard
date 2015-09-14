@@ -37,7 +37,8 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
     def __init__(self, method="single", affinity="euclidean",
                  threshold=None, n_clusters=None, criterion="distance",
                  depth=2, R=None, monocrit=None, unsupervised_scoring=None,
-                 supervised_scoring=None, scoring_data=None):
+                 supervised_scoring=None, scoring_data=None,
+                 best_threshold_precedence=True):
         """Initialize.
 
         Parameters
@@ -118,6 +119,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         self.unsupervised_scoring = unsupervised_scoring
         self.supervised_scoring = supervised_scoring
         self.scoring_data = scoring_data
+        self.best_threshold_precedence = best_threshold_precedence
 
     def fit(self, X, y=None):
         """Perform hierarchical clustering on input data.
@@ -256,8 +258,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         else:
             threshold = self.threshold
 
-            # Override threshold with the estimated one if it is None
-            if self.threshold is None:
+            if self.best_threshold_precedence:
                 threshold = self.best_threshold_
 
             labels = hac.fcluster(self.linkage_, threshold,
