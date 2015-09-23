@@ -12,7 +12,7 @@ The pipeline is made of several scripts:
         --output_pairs pairs/1M_nysiis_balanced.json \
         --use_blocking 1 \
         --blocking_function block_phonetic \
-        --blocking_threshold 0 \
+        --blocking_threshold 1 \
         --blocking_phonetic_alg nysiis \
         --verbose 1
 
