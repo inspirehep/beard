@@ -238,6 +238,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
         if n_clusters is not None:
             if n_clusters < 1 or n_clusters > self.n_samples_:
                 raise ValueError("n_clusters must be within [1; n_samples].")
+
             else:
                 thresholds = np.concatenate(([0],
                                             self.linkage_[:, 2],
@@ -251,7 +252,7 @@ class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
                                           depth=self.depth, R=self.R,
                                           monocrit=self.monocrit)
 
-                    if len(np.unique(labels)) == n_clusters:
+                    if len(np.unique(labels)) <= n_clusters:
                         _, labels = np.unique(labels, return_inverse=True)
                         return labels
 
