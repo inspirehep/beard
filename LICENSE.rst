@@ -1,4 +1,4 @@
-Beard is a free software; you can redistribute it and/or modify it
+Beard is free software; you can redistribute it and/or modify it
 under the terms of the Revised BSD License quoted below.
 
 Copyright (c) 2014 CERN.
