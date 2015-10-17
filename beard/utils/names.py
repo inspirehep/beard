@@ -217,8 +217,8 @@ def given_name_initial(name, index=0):
     Returns
     -------
     :return: string
-        The given name initial. Asciified one character, lowercase if available,
-        empty string otherwise.
+        The given name initial. Asciified one character, lowercase if
+        available, empty string otherwise.
     """
     try:
         asciified = asciify(name.split(",")[1]).lower().strip()

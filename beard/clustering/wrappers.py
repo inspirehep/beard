@@ -22,7 +22,6 @@ from sklearn.base import ClusterMixin
 
 
 class ScipyHierarchicalClustering(BaseEstimator, ClusterMixin):
-
     """Wrapper for Scipy's hierarchical clustering implementation.
 
     Attributes

@@ -89,7 +89,6 @@ def _parallel_fit(fit_, partial_fit_, estimator, verbose, data_queue,
 
 
 class BlockClustering(BaseEstimator, ClusterMixin):
-
     """Implements blocking for clustering estimators.
 
     Meta-estimator for grouping samples into blocks, within each of which

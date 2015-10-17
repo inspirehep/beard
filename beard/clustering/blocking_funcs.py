@@ -22,7 +22,6 @@ from beard.utils.names import given_name_initial
 
 
 class _Block:
-
     """Representation of a block.
 
     Block stores information about different variation of names and the
@@ -148,9 +147,7 @@ class _Block:
 
 
 def _split_blocks(blocks, X, threshold):
-
     splitted_blocks = []
-
     id_to_size = {}
 
     for block in blocks:
@@ -213,7 +210,6 @@ def block_phonetic(X, threshold=1000, phonetic_algorithm="double_metaphone"):
         -  "double_metaphone"
         -  "nysiis" (only for Python 2)
         -  "soundex" (only for Python 2)
-
 
     Returns
     -------

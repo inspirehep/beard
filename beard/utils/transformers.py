@@ -19,7 +19,6 @@ from sklearn.base import TransformerMixin
 
 
 class FuncTransformer(BaseEstimator, TransformerMixin):
-
     """Apply a given function element-wise."""
 
     def __init__(self, func, dtype=None):
@@ -73,7 +72,6 @@ class FuncTransformer(BaseEstimator, TransformerMixin):
 
 
 class Shaper(BaseEstimator, TransformerMixin):
-
     """Reshape arrays."""
 
     def __init__(self, newshape, order="C"):

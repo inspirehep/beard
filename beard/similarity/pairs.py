@@ -25,7 +25,6 @@ from sklearn.preprocessing import binarize
 
 
 class PairTransformer(BaseEstimator, TransformerMixin):
-
     """Apply a transformer on all elements in paired data."""
 
     def __init__(self, element_transformer, groupby=None):
@@ -166,7 +165,6 @@ class PairTransformer(BaseEstimator, TransformerMixin):
 
 
 class CosineSimilarity(BaseEstimator, TransformerMixin):
-
     """Cosine similarity on paired data."""
 
     def fit(self, X, y=None):
@@ -232,7 +230,6 @@ class CosineSimilarity(BaseEstimator, TransformerMixin):
 
 
 class EstimatorTransformer(TransformerMixin):
-
     """Wrap an estimator decision_function as a transform method."""
 
     def __init__(self, estimator):
@@ -288,7 +285,6 @@ class EstimatorTransformer(TransformerMixin):
 
 
 class ElementMultiplication(TransformerMixin):
-
     """Element-wise multiplication on paired data."""
 
     def fit(self, X, y=None):
@@ -335,7 +331,6 @@ class ElementMultiplication(TransformerMixin):
 
 
 class AbsoluteDifference(BaseEstimator, TransformerMixin):
-
     """Absolute difference of paired data."""
 
     def fit(self, X, y=None):
@@ -384,7 +379,6 @@ class AbsoluteDifference(BaseEstimator, TransformerMixin):
 
 
 class JaccardSimilarity(BaseEstimator, TransformerMixin):
-
     """Jaccard similarity on paired data.
 
     The Jaccard similarity of two elements in a pair is defined as the
@@ -485,7 +479,6 @@ def _character_equality(x, y):
 
 
 class StringDistance(BaseEstimator, TransformerMixin):
-
     """Distance between strings on paired data.
 
     It can be fed with a custom similarity function. By default jaro winkler is
