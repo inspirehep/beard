@@ -17,16 +17,9 @@ Installation
 
 ``python setup.py install``
 
-Testing
-=======
-
-To run the tests and see the code coverage, run:
-
-``python setup.py test``
-
 Examples
 ========
 
-In ``examples/applications/author-disambiguation`` directory there are files
+In the ``examples/applications/author-disambiguation`` directory there are files
 that present how to use the library for the author disambiguation problem.
 Check the ``README.rst`` in this directory for details.
