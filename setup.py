@@ -85,8 +85,8 @@ _keywords = [
 _install_requires = [
     "jellyfish",
     "numpy>=1.9",
-    "scikit-learn>=0.15.2",
     "scipy>=0.14",
+    "scikit-learn>=0.15.2",
     "six",
     "unidecode"
 ]
