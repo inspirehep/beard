@@ -23,12 +23,12 @@ deactivate
 
 # Use the miniconda installer for faster download / install of conda
 # itself
+
 wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh  \
     -O miniconda.sh
 
-bash miniconda.sh -b -p "$HOME/miniconda"
-export PATH="$HOME/miniconda/bin:$PATH"
-hash -r
+chmod +x miniconda.sh && ./miniconda.sh -b
+export PATH=/home/travis/miniconda2/bin:$PATH
 conda update --yes conda
 
 # Configure the conda environment and put it in the path using the
