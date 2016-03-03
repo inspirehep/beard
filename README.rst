@@ -7,10 +7,10 @@ Automatic Recognition and Disambiguation.
 
 The project is currently in early stage of development.
 
-.. image:: https://travis-ci.org/inveniosoftware/beard.svg?branch=master
-	:target: https://travis-ci.org/inveniosoftware/beard
-.. image:: https://coveralls.io/repos/inveniosoftware/beard/badge.png
-	:target: https://coveralls.io/r/inveniosoftware/beard
+.. image:: https://travis-ci.org/inspirehep/beard.svg?branch=master
+	:target: https://travis-ci.org/inspirehep/beard
+.. image:: https://coveralls.io/repos/inspirehep/beard/badge.png
+	:target: https://coveralls.io/r/inspirehep/beard
 
 Installation
 ============
