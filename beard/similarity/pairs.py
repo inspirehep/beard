@@ -222,7 +222,7 @@ class CosineSimilarity(BaseEstimator, TransformerMixin):
 
         denominator = (norm1 ** 0.5) * (norm2 ** 0.5)
 
-        with np.errstate(divide="ignore"):
+        with np.errstate(divide="ignore", invalid="ignore"):
             Xt = numerator / denominator
             Xt[denominator == 0.0] = 0.0
 
@@ -454,7 +454,7 @@ class JaccardSimilarity(BaseEstimator, TransformerMixin):
             X_sum[X_sum.nonzero()] = 1
             denominator = X_sum.sum(axis=1)
 
-        with np.errstate(divide="ignore"):
+        with np.errstate(divide="ignore", invalid="ignore"):
             Xt = numerator / denominator
             Xt[np.where(denominator == 0)[0]] = 0.
 
