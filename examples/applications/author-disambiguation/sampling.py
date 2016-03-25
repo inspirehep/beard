@@ -41,6 +41,7 @@ import json
 import math
 import numpy as np
 import random
+import six
 
 from beard.clustering import block_phonetic
 from beard.clustering import block_last_name_first_initial
@@ -50,7 +51,7 @@ def _noblocking_sampling(sample_size, train_signatures, clusters_reversed):
     pairs = []
     # Pairs dict will prevent duplicates
     pairs_dict = {}
-    category_size = sample_size / 2
+    category_size = sample_size // 2
     negative = 0
     while negative < category_size:
         s1 = random.choice(train_signatures)['signature_id']
@@ -78,7 +79,7 @@ def _noblocking_sampling(sample_size, train_signatures, clusters_reversed):
     for i in range(100):
         print("sampling positive examples: %s out of 100 folds" % (i+1))
         some_signatures = random.sample(train_signatures,
-                                        len(train_signatures)/20)
+                                        len(train_signatures)//20)
         for i, s1 in enumerate(some_signatures):
             for s2 in some_signatures[i+1:]:
                 s1_id = s1['signature_id']
@@ -88,7 +89,7 @@ def _noblocking_sampling(sample_size, train_signatures, clusters_reversed):
                 if s1_cluster == s2_cluster:
                     positive_pairs.append((s1_id, s2_id, 0))
 
-        sampled = random.sample(positive_pairs, category_size/100)
+        sampled = random.sample(positive_pairs, category_size//100)
         pairs += sampled
         for s1, s2, _ in sampled:
             if s1 > s2:
@@ -169,7 +170,7 @@ def pair_sampling(blocking_function,
     """
     # Load ground-truth
     true_clusters = json.load(open(clusters_filename, "r"))
-    clusters_reversed = {v: k for k, va in true_clusters.iteritems()
+    clusters_reversed = {v: k for k, va in six.iteritems(true_clusters)
                          for v in va}
 
     train_signatures = json.load(open(train_filename, "r"))
