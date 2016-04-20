@@ -38,7 +38,7 @@ conda create -n testenv --yes python=$PYTHON_VERSION pip \
     pytest pytest-pep8 pytest-cache sphinx
 source activate testenv
 
-pip install coveralls pep257 pytest-cov
+pip install check-manifest coveralls pydocstyle pytest-cov
 
 python --version
 python -c "import numpy; print('numpy %s' % numpy.__version__)"
