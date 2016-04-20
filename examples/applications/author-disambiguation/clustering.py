@@ -296,4 +296,5 @@ if __name__ == "__main__":
                args.input_clusters, args.output_clusters,
                args.verbose, args.n_jobs, args.clustering_method,
                args.train_signatures, args.clustering_threshold,
-               args.results_file)
+               args.results_file, args.blocking_function,
+               args.blocking_threshold, args.blocking_phonetic_alg)
