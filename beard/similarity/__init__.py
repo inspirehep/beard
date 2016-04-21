@@ -16,10 +16,13 @@ from .pairs import ElementMultiplication
 from .pairs import JaccardSimilarity
 from .pairs import PairTransformer
 from .pairs import StringDistance
+from .pairs import Thresholder
 
 __all__ = ("AbsoluteDifference",
            "CosineSimilarity",
            "EstimatorTransformer",
            "ElementMultiplication",
+           "JaccardSimilarity",
            "PairTransformer",
-           "StringDistance")
+           "StringDistance",
+           "Thresholder")
