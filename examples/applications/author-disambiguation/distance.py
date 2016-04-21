@@ -53,6 +53,7 @@ from beard.similarity import PairTransformer
 from beard.similarity import StringDistance
 from beard.similarity import EstimatorTransformer
 from beard.similarity import ElementMultiplication
+from beard.similarity import Thresholder
 from beard.utils import FuncTransformer
 from beard.utils import Shaper
 
@@ -177,13 +178,13 @@ def _build_distance_estimator(X, y, verbose=0, ethnicity_estimator=None,
                 ("combiner", CosineSimilarity())
             ])),
             ("subject_similairty", Pipeline([
-               ("pairs", PairTransformer(element_transformer=Pipeline([
-                   ("keywords", FuncTransformer(func=get_topics)),
-                   ("shaper", Shaper(newshape=(-1))),
-                   ("tf-idf", TfidfVectorizer(dtype=np.float32,
-                                              decode_error="replace")),
-               ]), groupby=group_by_signature)),
-               ("combiner", CosineSimilarity())
+                ("pairs", PairTransformer(element_transformer=Pipeline([
+                    ("keywords", FuncTransformer(func=get_topics)),
+                    ("shaper", Shaper(newshape=(-1))),
+                    ("tf-idf", TfidfVectorizer(dtype=np.float32,
+                                               decode_error="replace")),
+                ]), groupby=group_by_signature)),
+                ("combiner", CosineSimilarity())
             ])),
             ("year_diff", Pipeline([
                 ("pairs", FuncTransformer(func=get_year, dtype=np.int)),
@@ -263,20 +264,21 @@ def _build_distance_estimator(X, y, verbose=0, ethnicity_estimator=None,
                 ("classifier", EstimatorTransformer(ethnicity_estimator)),
             ]), groupby=group_by_signature)),
             ("sigmoid", FuncTransformer(func=expit)),
-            ("combiner", ElementMultiplication())
+            ("combiner", ElementMultiplication()),
+            ("thresholder", Thresholder(0.25))
         ])))
 
     # Train a classifier on these vectors
 
-    classifier = GradientBoostingClassifier(n_estimators=500,
-                                            max_depth=9,
-                                            max_features=10,
-                                            learning_rate=0.125,
-                                            verbose=verbose)
+    # classifier = GradientBoostingClassifier(n_estimators=500,
+    #                                         max_depth=9,
+    #                                         max_features=10,
+    #                                         learning_rate=0.125,
+    #                                         verbose=verbose)
 
-    # classifier = RandomForestClassifier(n_estimators=500,
-    #                                     verbose=verbose,
-    #                                     n_jobs=8)
+    classifier = RandomForestClassifier(n_estimators=500,
+                                        verbose=verbose,
+                                        n_jobs=8)
 
     # Return the whole pipeline
     estimator = Pipeline([("transformer", transformer),

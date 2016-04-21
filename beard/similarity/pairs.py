@@ -330,6 +330,51 @@ class ElementMultiplication(TransformerMixin):
         return Xt
 
 
+class Thresholder(TransformerMixin):
+    """Element-wise multiplication on paired data."""
+
+    def __init__(self, threshold):
+        """Initialize.
+
+        Parameters
+        ----------
+        :param threshold: The threshold over which the transformer will output
+            1.
+        """
+        self.threshold = threshold
+
+    def fit(self, X, y=None):
+        """(Do nothing).
+
+        Parameters
+        ----------
+        :param X: array-like, shape (n_samples, n_features)
+            Input data.
+
+        Returns
+        -------
+        :returns: self
+        """
+        return self
+
+    def transform(self, X):
+        """Return 1 if value exceeds the threshold.
+
+        0 otherwise
+
+        Parameters
+        ----------
+        :param X: array-like, shape (n_samples, n_features)
+            Input paired data.
+
+        Returns
+        -------
+        :returns Xt: array-like, shape (n_samples, n_features)
+            The transformed data.
+        """
+        return (X > self.threshold).astype(np.float)
+
+
 class AbsoluteDifference(BaseEstimator, TransformerMixin):
     """Absolute difference of paired data."""
 
