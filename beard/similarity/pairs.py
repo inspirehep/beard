@@ -331,7 +331,7 @@ class ElementMultiplication(TransformerMixin):
 
 
 class Thresholder(TransformerMixin):
-    """Element-wise multiplication on paired data."""
+    """Element-wise floating number binarization."""
 
     def __init__(self, threshold):
         """Initialize.

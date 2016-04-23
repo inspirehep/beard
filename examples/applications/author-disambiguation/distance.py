@@ -264,8 +264,7 @@ def _build_distance_estimator(X, y, verbose=0, ethnicity_estimator=None,
                 ("classifier", EstimatorTransformer(ethnicity_estimator)),
             ]), groupby=group_by_signature)),
             ("sigmoid", FuncTransformer(func=expit)),
-            ("combiner", ElementMultiplication()),
-            ("thresholder", Thresholder(0.25))
+            ("combiner", ElementMultiplication())
         ])))
 
     # Train a classifier on these vectors
