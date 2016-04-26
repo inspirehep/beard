@@ -61,8 +61,8 @@ with open(os.path.join("beard", "__init__.py"), "rt") as f:
     ).group("version")
 
 _classifiers = [
-    # clasifiers for PyPI
-    "Development Status :: 1 - Planning",
+    # classifiers for PyPI
+    "Development Status :: 4 - Beta",
     "Environment :: Console",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: BSD License",
@@ -96,17 +96,16 @@ if sys.version[0] == '2':
     _install_requires.append("fuzzy")
 
 _tests_require = [
-    "pytest",
+    "coverage",
+    "pytest>=2.6.1",
     "pytest-cache>=1.0",
     "pytest-cov>=1.8.0",
     "pytest-pep8>=1.0.6",
-    "pytest>=2.6.1",
-    "coverage"
 ]
 
 _parameters = {
-    "author": "Invenio collaboration",
-    "author_email": "beard@invenio-software.org",
+    "author": "CERN",
+    "author_email": "admin@inspirehep.net",
     "classifiers": _classifiers,
     "cmdclass": {"test": PyTest},
     "description": "Bibliographic Entity Automatic \
@@ -119,7 +118,7 @@ _parameters = {
     "packages": packages,
     "platforms": "any",
     "tests_require": _tests_require,
-    "url": "https://github.com/inveniosoftware/beard",
+    "url": "https://github.com/inspirehep/beard",
     "version": _version,
 }
 

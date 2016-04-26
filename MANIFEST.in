@@ -1,0 +1,14 @@
+include *.rst
+include *.sh
+include .coveragerc
+include pytest.ini
+recursive-include doc *.bat
+recursive-include doc *.keep
+recursive-include doc *.py
+recursive-include doc *.rst
+recursive-include doc Makefile
+recursive-include examples *.json
+recursive-include examples *.npz
+recursive-include examples *.py
+recursive-include examples *.rst
+recursive-include tests *.py

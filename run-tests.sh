@@ -1,12 +1,13 @@
-# -*- coding: utf-8 -*-
-#
+#!/bin/bash
 # This file is part of Beard.
-# Copyright (C) 2014 CERN.
+# Copyright (C) 2016 CERN.
 #
 # Beard is a free software; you can redistribute it and/or modify it
 # under the terms of the Revised BSD License; see LICENSE file for
 # more details.
 
-"""Bibliographic Entity Automatic Recognition and Disambiguation."""
+set -e
 
-__version__ = "0.1"
+pydocstyle --convention=pep257 --match-dir='^((?!ext).)*$' beard
+check-manifest --ignore miniconda.sh
+python setup.py test
