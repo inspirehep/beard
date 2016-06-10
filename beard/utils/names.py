@@ -232,7 +232,10 @@ def given_name_initial(name, index=0):
             # For example "John Smith", without comma. The first string should
             # indicate the first given name.
             asciified = asciify(split_name[0]).lower().strip()
-            return RE_CHARACTERS.findall(asciified)[0]
+            try:
+                return RE_CHARACTERS.findall(asciified)[0]
+            except IndexError:
+                pass
         return ""
 
 
