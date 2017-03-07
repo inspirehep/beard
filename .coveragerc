@@ -8,3 +8,4 @@
 [run]
 source = beard
 omit = beard/ext/*
+
