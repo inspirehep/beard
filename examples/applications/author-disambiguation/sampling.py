@@ -46,6 +46,11 @@ import six
 from beard.clustering import block_phonetic
 from beard.clustering import block_last_name_first_initial
 
+import sys
+
+# for Python 3
+if sys.version_info[0]==3:
+    from functools import reduce
 
 def _noblocking_sampling(sample_size, train_signatures, clusters_reversed):
     pairs = []
@@ -194,7 +199,8 @@ def pair_sampling(blocking_function,
     else:
         raise ValueError("No such blocking strategy.")
 
-    category_size = sample_size / 4
+    # perhaps there was a bug: category_size should be an integer
+    category_size = sample_size // 4
 
     blocking_dict = {}
 
@@ -211,7 +217,7 @@ def pair_sampling(blocking_function,
     sadn = []
     dadn = []
 
-    for _, sig_s in blocking_dict.iteritems():
+    for _, sig_s in six.iteritems(blocking_dict):
 
         for i, s1 in enumerate(sig_s):
             for s2 in sig_s[i+1:]:
@@ -221,6 +227,7 @@ def pair_sampling(blocking_function,
                 s2_name = train_signatures[s2]['author_name']
                 s1_cluster = clusters_reversed[s1_id]
                 s2_cluster = clusters_reversed[s2_id]
+
                 if s1_cluster == s2_cluster:
                     # Same author
                     if s1_name == s2_name:
@@ -244,8 +251,13 @@ def pair_sampling(blocking_function,
         all_pairs = map(lambda x: int(math.ceil(
                         category_size/float(len(x)))) * x,
                         [dasn, sasn, sadn, dadn])
+
+        if sys.version_info[0]==3:
+            all_pairs = list(all_pairs)
+
         pairs = reduce(lambda x, y: x + random.sample(y, category_size),
                        all_pairs, [])
+
     else:
         positive = sasn + sadn
         negative = dasn + dadn
