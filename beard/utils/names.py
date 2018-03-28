@@ -119,7 +119,7 @@ def phonetic_tokenize_name(name, phonetic_algorithm="double_metaphone"):
         phonetic_algorithms = {
             "double_metaphone": lambda y: dm(y)[0] or '',
             "nysiis": lambda y: fuzzy.nysiis(y),
-            "soundex": lambda y: soundex(y)
+            "soundex": lambda y: soundex(asciify(y))
         }
     else:
         from ..ext.metaphone import dm
