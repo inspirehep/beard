@@ -5,7 +5,7 @@ Beard
 Beard is a Python library of machine learning tools for Bibliographic Entity
 Automatic Recognition and Disambiguation.
 
-The project is currently in early stage of development.
+The project is currently in stable stage of development.
 
 .. image:: https://travis-ci.org/inspirehep/beard.svg?branch=master
 	:target: https://travis-ci.org/inspirehep/beard

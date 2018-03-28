@@ -8,6 +8,6 @@
 
 set -e
 
-pydocstyle --convention=pep257 --match-dir='^((?!ext).)*$' beard
+pydocstyle --convention=pep257 --match-dir='^((?!ext).)*$' --ignore=D413 beard
 check-manifest --ignore miniconda.sh
 python setup.py test
