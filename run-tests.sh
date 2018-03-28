@@ -8,6 +8,5 @@
 
 set -e
 
-pydocstyle --match-dir='^((?!ext).)*$' --ignore=D413 beard
 check-manifest --ignore miniconda.sh
 python setup.py test
