@@ -199,7 +199,6 @@ def pair_sampling(blocking_function,
     else:
         raise ValueError("No such blocking strategy.")
 
-    # perhaps there was a bug: category_size should be an integer
     category_size = sample_size // 4
 
     blocking_dict = {}
