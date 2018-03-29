@@ -93,7 +93,8 @@ _install_requires = [
 
 if sys.version[0] == '2':
     # fuzzy package is not available on Python 3
-    _install_requires.append("fuzzy")
+    # version 1.1 due to Soundex bug in 1.2
+    _install_requires.append("fuzzy==1.1")
 
 _tests_require = [
     "coverage",
