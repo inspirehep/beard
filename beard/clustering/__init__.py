@@ -12,11 +12,13 @@
 from .blocking import BlockClustering
 from .blocking_funcs import block_phonetic
 from .blocking_funcs import block_last_name_first_initial
+from .blocking_funcs import block_signature_block
 from .blocking_funcs import block_single
 from .wrappers import ScipyHierarchicalClustering
 
 __all__ = ("BlockClustering",
            "block_phonetic",
            "block_last_name_first_initial",
+           "block_signature_block",
            "block_single",
            "ScipyHierarchicalClustering")

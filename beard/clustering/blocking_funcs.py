@@ -385,3 +385,23 @@ def block_last_name_first_initial(X):
         blocks.append(last_name_first_initial(signature["author_name"]))
 
     return np.array(blocks)
+
+def block_signature_block(X):
+    """Blocking function using the INSPIRE signature blocks as key.
+
+    Parameters
+    ----------
+    :param X: numpy array
+        Array of singletons of dictionaries.
+
+    Returns
+    -------
+    :returns: numpy array
+        Array with ids of the blocks. The order of the
+        array is the same as in the ``X`` input parameter.
+    """
+    blocks = []
+    for signature in X[:, 0]:
+        blocks.append(signature['signature_block'])
+
+    return np.array(blocks)
