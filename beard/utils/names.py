@@ -18,6 +18,8 @@ import functools
 import re
 import sys
 
+import fuzzy
+
 from .misc import memoize
 from .strings import asciify
 
@@ -101,8 +103,8 @@ def phonetic_tokenize_name(name, phonetic_algorithm="double_metaphone"):
     :param phonetic algorithm: string
         Which phonetic algorithm will be used. Options:
         -  "double_metaphone"
-        -  "nysiis" (only for Python 2)
-        -  "soundex" (only for Python 2)
+        -  "nysiis"
+        -  "soundex"
 
     Returns
     -------
@@ -112,20 +114,26 @@ def phonetic_tokenize_name(name, phonetic_algorithm="double_metaphone"):
         exactly two elements. Only the first results of the double metaphone
         algorithm are included in tuples.
     """
-    if sys.version[0] == '2':
-        import fuzzy
-        dm = fuzzy.DMetaphone()
-        soundex = fuzzy.Soundex(5)
-        phonetic_algorithms = {
-            "double_metaphone": lambda y: dm(y)[0] or '',
-            "nysiis": lambda y: fuzzy.nysiis(y),
-            "soundex": lambda y: soundex(y)
-        }
-    else:
-        from ..ext.metaphone import dm
-        phonetic_algorithms = {
-            "double_metaphone": lambda y: dm(y)[0]
-        }
+    if phonetic_algorithm == "soundex":
+        error = (
+            "The version of the 'fuzzy' package in use has a buggy soundex"
+            " implementation (see https://github.com/yougov/fuzzy/issues/14 ),"
+            " downgrade the package to 1.1 (compatible with Python 2 only) if"
+            " you want to use the soundex phonetic encoding."
+        )
+        try:
+            if fuzzy.Soundex(4)("fuzzy") != "F200":
+                raise ValueError(error)
+        except UnicodeDecodeError:
+            raise ValueError(error)
+
+    dm = fuzzy.DMetaphone()
+    soundex = fuzzy.Soundex(5)
+    phonetic_algorithms = {
+        "double_metaphone": lambda y: (dm(y)[0] or b'').decode(),
+        "nysiis": lambda y: fuzzy.nysiis(y),
+        "soundex": lambda y: soundex(y)
+    }
 
     tokens = tokenize_name(name)
     # Use double metaphone

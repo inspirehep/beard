@@ -22,7 +22,10 @@ import scipy.sparse as sp
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.preprocessing import StandardScaler
-from sklearn.cross_validation import train_test_split
+try:
+    from sklearn.cross_validation import train_test_split
+except ImportError:
+    from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_iris
 from sklearn.svm import LinearSVC
 

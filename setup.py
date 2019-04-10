@@ -83,7 +83,8 @@ _keywords = [
 ]
 
 _install_requires = [
-    "jellyfish",
+    # jellyfish 0.7 is Python 3 only
+    "jellyfish<=0.7",
     "numpy>=1.9",
     "scipy>=0.14",
     "scikit-learn>=0.15.2",
@@ -92,9 +93,11 @@ _install_requires = [
 ]
 
 if sys.version[0] == '2':
-    # fuzzy package is not available on Python 3
-    # version 1.1 due to Soundex bug in 1.2
+    # use version 1.1 due to Soundex bug in 1.2
     _install_requires.append("fuzzy==1.1")
+else:
+    # need to use version 1.2 with buggy Soundex for Python 3 compatibility
+    _install_requires.append("fuzzy~=1.0,>=1.2")
 
 _tests_require = [
     "coverage",

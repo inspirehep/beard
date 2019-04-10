@@ -17,6 +17,8 @@
 import pytest
 import sys
 
+import fuzzy
+
 from beard.ext.metaphone import dm
 
 from beard.utils.names import phonetic_tokenize_name
@@ -87,14 +89,15 @@ def test_phonetic_tokenize_name_simple():
         phonetic_tokenize_name("Dupont, Jean")
 
 
-@pytest.mark.skipif(sys.version[0] == '3',
-                    reason="fuzzy package doesn't work with Python 3")
-def test_phonetic_tokenize_name_python2():
-    """Test checking if custom phonetic algorithms from fuzzy packages work."""
-    import fuzzy
-    soundex = fuzzy.Soundex(5)
+def test_phonetic_tokenize_name_nysiis():
     assert phonetic_tokenize_name("Dupont, René", "nysiis") == (
         ((fuzzy.nysiis(u"Dupont"),), (fuzzy.nysiis(u"René"),)))
+
+
+@pytest.mark.xfail(reason="soundex is broken in fuzzy 1.2.*")
+def test_phonetic_tokenize_name_soundex():
+    """Test checking if custom phonetic algorithms from fuzzy packages work."""
+    soundex = fuzzy.Soundex(5)
     assert phonetic_tokenize_name("Dupont, René", "soundex") == (
         # no direct support for unicode in soundex, thus "Rene"
         ((soundex(u"Dupont"),), (soundex(u"Rene"),)))
