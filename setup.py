@@ -83,7 +83,8 @@ _keywords = [
 ]
 
 _install_requires = [
-    "jellyfish",
+    # jellyfish 0.7 is Python 3 only
+    "jellyfish<=0.7",
     "numpy>=1.9",
     "scipy>=0.14",
     "scikit-learn>=0.15.2",
