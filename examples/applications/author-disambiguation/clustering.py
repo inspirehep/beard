@@ -23,7 +23,10 @@ import numpy as np
 
 from functools import partial
 
-from sklearn.cross_validation import train_test_split
+try:
+    from sklearn.cross_validation import train_test_split
+except ImportError:
+    from sklearn.model_selection import train_test_split
 
 # These imports are used during unpickling.
 from utils import get_author_full_name
