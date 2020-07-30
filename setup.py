@@ -83,13 +83,15 @@ _keywords = [
 ]
 
 _install_requires = [
+    "setuptools-scm<4.0.0",
     # jellyfish 0.7 is Python 3 only
     "jellyfish<=0.7",
     "numpy>=1.9",
     "scipy>=0.14",
     "scikit-learn>=0.15.2",
     "six",
-    "unidecode"
+    "structlog",
+    "unidecode",
 ]
 
 if sys.version[0] == '2':
