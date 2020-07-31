@@ -19,7 +19,7 @@ export CXX=g++
 
 # Deactivate the travis-provided virtual environment and setup a
 # conda-based environment instead
-deactivate
+# deactivate
 
 # Use the miniconda installer for faster download / install of conda
 # itself
@@ -37,8 +37,6 @@ conda create -n testenv --yes python=$PYTHON_VERSION pip \
     numpy=$NUMPY_VERSION scipy=$SCIPY_VERSION scikit-learn=$SKLEARN_VERSION \
     pytest pytest-pep8 pytest-cache sphinx
 source activate testenv
-
-pip install check-manifest coveralls pydocstyle pytest-cov
 
 python --version
 python -c "import numpy; print('numpy %s' % numpy.__version__)"
