@@ -13,11 +13,14 @@ matrix:
   include:
     - python: "2.7"
       env: PYTHON_VERSION="2.7" NUMPY_VERSION="1.10" SCIPY_VERSION="0.17" SKLEARN_VERSION="0.17"
-    - python: "3.4"
-      env: PYTHON_VERSION="3.4" NUMPY_VERSION="1.10" SCIPY_VERSION="0.17" SKLEARN_VERSION="0.17"
+    - python: "3.6"
+      env: PYTHON_VERSION="3.6"
 
 install:
-    - source travis-install.sh
+    - if [[ "$PYTHON_VERSION" == "2.7" ]]; then
+        source travis-install.sh;
+      fi
+    - pip install check-manifest coveralls pydocstyle pytest-cov
     - python setup.py install
     - python setup.py clean --all
 

@@ -71,7 +71,7 @@ _classifiers = [
     "Programming Language :: Python :: 2",
     "Programming Language :: Python :: 2.7",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.4",
+    "Programming Language :: Python :: 3.6",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Information Analysis"
 ]
@@ -83,13 +83,15 @@ _keywords = [
 ]
 
 _install_requires = [
+    "setuptools-scm<4.0.0",
     # jellyfish 0.7 is Python 3 only
     "jellyfish<=0.7",
     "numpy>=1.9",
     "scipy>=0.14",
     "scikit-learn>=0.15.2",
     "six",
-    "unidecode"
+    "structlog",
+    "unidecode",
 ]
 
 if sys.version[0] == '2':

@@ -18,6 +18,7 @@ from __future__ import print_function
 
 import numpy as np
 import time
+import structlog
 
 from sklearn.base import BaseEstimator
 from sklearn.base import clone
@@ -25,6 +26,8 @@ from sklearn.base import ClusterMixin
 from sklearn.utils import column_or_1d
 
 from .blocking_funcs import block_single
+
+LOGGER = structlog.getLogger()
 
 
 class _SingleClustering(BaseEstimator, ClusterMixin):
@@ -63,6 +66,7 @@ def _parallel_fit(fit_, partial_fit_, estimator, verbose, data_queue,
 
         if verbose > 1:
             print("Clustering %d samples on block '%s'..." % (len(X), b))
+            LOGGER.info("Clustering %d samples on block '%s'..." % (len(X), b))
 
         if fit_ or not hasattr(clusterer, "partial_fit"):
             try:
@@ -96,6 +100,7 @@ def _single_fit(fit_, partial_fit_, estimator, verbose, data):
 
     if verbose > 1:
         print("Clustering %d samples on block '%s'..." % (len(X), b))
+        LOGGER.info("Clustering %d samples on block '%s'..." % (len(X), b))
 
     if fit_ or not hasattr(clusterer, "partial_fit"):
         try:
@@ -213,11 +218,15 @@ class BlockClustering(BaseEstimator, ClusterMixin):
     def _fit(self, X, y, blocks):
         """Fit base clustering estimators on X."""
         self.blocks_ = blocks
-
         if self.n_jobs == 1:
+            LOGGER.info("fitting data with 1 job")
             blocks_computed = 0
             blocks_all = len(np.unique(blocks))
-
+            LOGGER.info(
+                "%s blocks computed out of %s" % (
+                    blocks_computed, blocks_all
+                )
+            )
             for block in self._blocks(X, y, blocks):
                 if self.partial_fit_ and block[0] in self.clusterers_:
                     data = (block, self.clusterers_[block[0]])
@@ -234,8 +243,18 @@ class BlockClustering(BaseEstimator, ClusterMixin):
                 if blocks_computed < blocks_all:
                     print("%s blocks computed out of %s" % (blocks_computed,
                                                             blocks_all))
+                    LOGGER.info(
+                        "%s blocks computed out of %s" % (
+                            blocks_computed, blocks_all
+                        )
+                    )
                 blocks_computed += 1
         else:
+            LOGGER.info(
+                "fitting data with {0} parallel jobs".format(
+                    self.n_jobs
+                )
+            )
             try:
                 from multiprocessing import SimpleQueue
             except ImportError:
@@ -283,6 +302,11 @@ class BlockClustering(BaseEstimator, ClusterMixin):
                 if blocks_computed < blocks_all:
                     print("%s blocks computed out of %s" % (blocks_computed,
                                                             blocks_all))
+                    LOGGER.info(
+                        "%s blocks computed out of %s" % (
+                            blocks_computed, blocks_all
+                        )
+                    )
                     b, clusterer = result_queue.get()
                     blocks_computed += 1
                     if clusterer:
